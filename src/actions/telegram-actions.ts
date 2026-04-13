@@ -1,7 +1,7 @@
 "use server";
 
-// ఇక్కడ 'export' కచ్చితంగా ఉండాలి
-export async function sendTelegramMessage(message: string, imageUrl?: string) {
+// ఇక్కడ ఫంక్షన్ పేరు 'postToTelegram' గా మార్చాను, బిల్డ్ ఎర్రర్ పోవడానికి.
+export async function postToTelegram(message: string, imageUrl?: string) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
@@ -34,3 +34,6 @@ export async function sendTelegramMessage(message: string, imageUrl?: string) {
     return { success: false, error: "Network error" };
   }
 }
+
+// ఒకవేళ నీ కోడ్ లో ఎక్కడైనా పాత పేరు వాడుతుంటే ఇబ్బంది లేకుండా ఇది కూడా ఉంచుతున్నాను
+export const sendTelegramMessage = postToTelegram;
