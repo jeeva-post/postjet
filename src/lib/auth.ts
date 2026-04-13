@@ -1,11 +1,9 @@
 import FacebookProvider from "next-auth/providers/facebook";
 import GithubProvider from "next-auth/providers/github";
-import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
-import clientPromise from "@/lib/mongodb";
 import { NextAuthOptions } from "next-auth";
 
 export const authOptions: NextAuthOptions = {
-  adapter: MongoDBAdapter(clientPromise),
+  // తాత్కాలికంగా అడాప్టర్ తీసేశాం - డేటాబేస్ కనెక్షన్ అవసరం లేదు
   providers: [
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
@@ -16,24 +14,9 @@ export const authOptions: NextAuthOptions = {
       clientSecret: process.env.GITHUB_SECRET!,
     }),
   ],
-  // ఈ సెషన్ స్ట్రాటజీ ని యాడ్ చెయ్యి
   session: {
-    strategy: "jwt", 
-  },
-  callbacks: {
-    async jwt({ token, user, account }: any) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }: any) {
-      if (session.user) {
-        session.user.id = token.id;
-      }
-      return session;
-    },
+    strategy: "jwt", // కేవలం టోకెన్ ఆధారంగా లాగిన్
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
+  debug: true, // ఎర్రర్స్ కనిపిస్తాయి
 };
