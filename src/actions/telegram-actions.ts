@@ -1,9 +1,12 @@
 "use server";
 
-// ఇక్కడ ఫంక్షన్ పేరు 'postToTelegram' గా మార్చాను, బిల్డ్ ఎర్రర్ పోవడానికి.
-export async function postToTelegram(message: string, imageUrl?: string) {
+export async function postToTelegram(formData: FormData) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  // FormData నుండి డేటాను తీసుకోవడం
+  const message = formData.get("text") as string || "";
+  const imageUrl = formData.get("media") as string || ""; // ఒకవేళ URL పంపిస్తే
 
   if (!token || !chatId) {
     console.error("Telegram credentials missing!");
@@ -12,7 +15,7 @@ export async function postToTelegram(message: string, imageUrl?: string) {
 
   try {
     let url = "";
-    if (imageUrl) {
+    if (imageUrl && imageUrl.startsWith("http")) {
       // ఇమేజ్ ఉంటే sendPhoto
       url = `https://api.telegram.org/bot${token}/sendPhoto?chat_id=${chatId}&photo=${encodeURIComponent(imageUrl)}&caption=${encodeURIComponent(message)}`;
     } else {
@@ -24,7 +27,7 @@ export async function postToTelegram(message: string, imageUrl?: string) {
     const data = await res.json();
     
     if (data.ok) {
-      return { success: true };
+      return { success: true, error: null };
     } else {
       console.error("Telegram API Error:", data.description);
       return { success: false, error: data.description };
@@ -35,5 +38,5 @@ export async function postToTelegram(message: string, imageUrl?: string) {
   }
 }
 
-// ఒకవేళ నీ కోడ్ లో ఎక్కడైనా పాత పేరు వాడుతుంటే ఇబ్బంది లేకుండా ఇది కూడా ఉంచుతున్నాను
+// పాత పేరు కోసం Alias
 export const sendTelegramMessage = postToTelegram;
