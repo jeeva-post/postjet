@@ -2,7 +2,7 @@
 import cloudinary from '@/lib/cloudinary';
 
 export async function postToInstagram(formData: FormData) {
-  const text = formData.get("text") as string || "";
+  const text = (formData.get("text") as string) || "";
   const file = formData.get("media") as File;
   const igId = process.env.INSTAGRAM_BUSINESS_ACCOUNT_ID?.trim();
   const token = process.env.INSTAGRAM_ACCESS_TOKEN?.trim();
@@ -13,33 +13,35 @@ export async function postToInstagram(formData: FormData) {
   const isVideo = file.type.startsWith("video");
 
   try {
-    // 1. Cloudinary Upload (ఇక్కడ వీడియోని ఆటోమేటిక్ గా సెట్ చేస్తున్నాం)
+    // 1. Cloudinary Upload
     const arrayBuffer = await file.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
     
     const uploadRes: any = await new Promise((resolve, reject) => {
-      cloudinary.uploader.upload_stream(
+      const uploadStream = cloudinary.uploader.upload_stream(
         { 
           resource_type: "auto", 
           folder: "postjet",
-          // వీడియో అయితే ఇన్‌స్టాగ్రామ్ కి నచ్చే mp4 మరియు క్వాలిటీ లోకి మారుస్తుంది
           transformation: isVideo ? [
-            { width: 720, crop: "limit" }, // వెడల్పును కంట్రోల్ చేయడం
+            { width: 720, crop: "limit" },
             { quality: "auto", fetch_format: "mp4" }
           ] : []
         },
-        (error, result) => { if (error) reject(error); else resolve(result); }
-      ).end(buffer);
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      );
+      uploadStream.end(buffer);
     });
 
     const mediaUrl = uploadRes.secure_url;
 
-    // 2. Step 1: కంటైనర్ క్రియేషన్
-    // ఇక్కడ మనం చాలా క్లీన్ గా డేటా పంపాలి
+    // 2. Step 1: Container Creation
     const body: any = {
       caption: text,
       access_token: token,
-      media_type: isVideo ? 'REELS' : 'IMAGE', // VIDEO బదులు REELS వాడటం ఉత్తమం
+      media_type: isVideo ? 'REELS' : 'IMAGE',
     };
 
     if (isVideo) {
@@ -57,29 +59,35 @@ export async function postToInstagram(formData: FormData) {
     const containerData = await containerRes.json();
     
     if (!containerRes.ok) {
-      // 👈 నీ టెర్మినల్ లో ఈ ఎర్రర్ ఏంటో క్లియర్ గా కనిపిస్తుంది
       console.error("FULL META ERROR:", JSON.stringify(containerData, null, 2));
       return { success: false, error: containerData.error?.message || "Invalid Parameter" };
     }
 
     const creationId = containerData.id;
 
-    // 3. Step 2: Polling (వీడియో రెడీ అయ్యే వరకు ఆగడం)
+    // 3. Step 2: Polling (వీడియో లేదా ఇమేజ్ ప్రాసెస్ అయ్యే వరకు ఆగడం)
     let isReady = false;
     let attempts = 0;
-    while (!isReady && attempts < 15) {
+    // ఇమేజ్ అయితే వెంటనే అయిపోతుంది, వీడియో అయితే సమయం పడుతుంది
+    while (!isReady && attempts < 20) { 
       await new Promise(r => setTimeout(r, 5000));
       const statusRes = await fetch(`https://graph.facebook.com/v21.0/${creationId}?fields=status_code&access_token=${token}`);
       const statusData = await statusRes.json();
       
-      if (statusData.status_code === 'FINISHED') isReady = true;
-      if (statusData.status_code === 'ERROR') return { success: false, error: "Instagram media processing failed." };
+      if (statusData.status_code === 'FINISHED') {
+        isReady = true;
+      } else if (statusData.status_code === 'ERROR') {
+        return { success: false, error: "Instagram media processing failed." };
+      }
       
       attempts++;
       console.log(`Checking IG Status... Attempt ${attempts}: ${statusData.status_code}`);
+      
+      // ఒకవేళ ఇమేజ్ అయితే మొదటి అటెంప్ట్ లోనే ఫినిష్ అయ్యే ఛాన్స్ ఉంది
+      if (!isVideo && attempts > 1) isReady = true; 
     }
 
-    if (!isReady) return { success: false, error: "Processing timed out. Please try a smaller video." };
+    if (!isReady) return { success: false, error: "Processing timed out. Please try again." };
 
     // 4. Step 3: Final Publish
     const publishRes = await fetch(`https://graph.facebook.com/v21.0/${igId}/media_publish`, {
@@ -94,6 +102,7 @@ export async function postToInstagram(formData: FormData) {
     return { success: false, error: publishData.error?.message || "Publishing failed" };
 
   } catch (err: any) {
-    return { success: false, error: err.message };
+    console.error("IG Action Catch Error:", err);
+    return { success: false, error: err.message || "An unexpected error occurred" };
   }
 }
