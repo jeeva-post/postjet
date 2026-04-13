@@ -1,5 +1,4 @@
 import FacebookProvider from "next-auth/providers/facebook";
-import PinterestProvider from "next-auth/providers/pinterest";
 import GithubProvider from "next-auth/providers/github";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import clientPromise from "@/lib/mongodb";
@@ -11,34 +10,30 @@ export const authOptions: NextAuthOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: "email,public_profile,pages_show_list,pages_read_engagement,pages_manage_posts,instagram_basic,instagram_content_publish",
-        },
-      },
-    }),
-    PinterestProvider({
-      clientId: process.env.PINTEREST_CLIENT_ID!,
-      clientSecret: process.env.PINTEREST_CLIENT_SECRET!,
-      authorization: {
-        params: {
-          scope: "boards:read,pins:read,pins:write",
-        },
-      },
     }),
     GithubProvider({
       clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!
+      clientSecret: process.env.GITHUB_SECRET!,
     }),
   ],
+  // ఈ సెషన్ స్ట్రాటజీ ని యాడ్ చెయ్యి
+  session: {
+    strategy: "jwt", 
+  },
   callbacks: {
-    async session({ session, user }: any) {
+    async jwt({ token, user, account }: any) {
+      if (user) {
+        token.id = user.id;
+      }
+      return token;
+    },
+    async session({ session, token }: any) {
       if (session.user) {
-        session.user.id = user.id;
+        session.user.id = token.id;
       }
       return session;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === "development",
+  debug: true,
 };
