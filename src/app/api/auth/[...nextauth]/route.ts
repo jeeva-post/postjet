@@ -1,7 +1,7 @@
 import NextAuth from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// ఇది వెర్సెల్ బిల్డ్ ఎర్రర్‌ని (Failed to collect page data) ఫిక్స్ చేస్తుంది
+// ఈ లైన్ బిల్డ్ టైమ్ ఎర్రర్ రాకుండా కాపాడుతుంది
 export const dynamic = "force-dynamic";
 
 const handler = NextAuth(authOptions);

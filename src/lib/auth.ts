@@ -13,36 +13,29 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.identifier || !credentials?.password) return null;
-
         try {
           const client = await clientPromise;
           const db = client.db();
-          
           const user = await db.collection("users").findOne({
             $or: [
               { email: credentials.identifier.toLowerCase() },
               { mobile: credentials.identifier }
             ]
           });
-
           if (!user || !user.password) return null;
-
           const isValid = await bcrypt.compare(credentials.password, user.password);
           if (!isValid) return null;
-
           return { id: user._id.toString(), name: user.name, email: user.email };
         } catch (error) {
-          console.error("Auth error:", error);
           return null;
         }
       }
     })
   ],
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET || "dummy_secret_for_build", // బిల్డ్ టైమ్ లో ఎర్రర్ రాకుండా
-  pages: {
-    signIn: "/auth/signin",
-  },
+  // SECRET ఇక్కడ పక్కాగా ఉండాలి
+  secret: process.env.NEXTAUTH_SECRET || "fallback_secret_for_build_only",
+  pages: { signIn: "/auth/signin" },
   callbacks: {
     async jwt({ token, user }: any) {
       if (user) token.id = user.id;
