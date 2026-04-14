@@ -2,36 +2,42 @@ import { NextResponse } from "next/server";
 import clientPromise from "@/lib/mongodb";
 import bcrypt from "bcryptjs";
 
+// ఈ లైన్ వెర్సెల్ బిల్డ్ ఎర్రర్స్ (Missing Environment Variables) రాకుండా కాపాడుతుంది
+export const dynamic = "force-dynamic";
+
 export async function POST(req: Request) {
   try {
-    // 1. రిక్వెస్ట్ బాడీ నుండి డేటా తీసుకోవడం
     const body = await req.json();
     const { name, email, mobile, password } = body;
 
-    // 2. బేసిక్ వాలిడేషన్ (ఏ ఒక్కటి మిస్ అయినా ఎర్రర్ ఇస్తుంది)
+    // 1. డేటా సరిగ్గా ఉందో లేదో చెక్ చేయడం
     if (!name || !email || !mobile || !password) {
       return NextResponse.json(
-        { error: "అన్ని ఫీల్డ్స్ (Name, Email, Mobile, Password) తప్పనిసరి!" },
+        { error: "అన్ని వివరాలు (Name, Email, Mobile, Password) ఇవ్వాలి." },
         { status: 400 }
       );
     }
 
+    // 2. MongoDB కనెక్ట్ అవ్వడం
     const client = await clientPromise;
     const db = client.db();
 
-    // 3. యూజర్ ముందే ఉన్నారో లేదో చెక్ చేయడం (Email లేదా Mobile తో)
-    const existingUser = await db.collection("users").findOne({ 
-      $or: [{ email: email.toLowerCase() }, { mobile: mobile }] 
+    // 3. యూజర్ ముందే ఉన్నారో లేదో చూడటం
+    const existingUser = await db.collection("users").findOne({
+      $or: [
+        { email: email.toLowerCase() },
+        { mobile: mobile }
+      ]
     });
 
     if (existingUser) {
       return NextResponse.json(
-        { error: "ఈ ఇమెయిల్ లేదా మొబైల్ నంబర్ తో ఇప్పటికే యూజర్ ఉన్నారు!" },
+        { error: "ఈ ఇమెయిల్ లేదా మొబైల్ నంబర్ తో ఇప్పటికే ఒక యూజర్ ఉన్నారు." },
         { status: 400 }
       );
     }
 
-    // 4. పాస్‌వర్డ్ హ్యాష్ చేయడం (Security కోసం)
+    // 4. పాస్‌వర్డ్ ని హ్యాష్ చేయడం
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // 5. కొత్త యూజర్‌ని సేవ్ చేయడం
@@ -51,7 +57,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Registration Error:", error);
     return NextResponse.json(
-      { error: "రిజిస్ట్రేషన్ ఫెయిల్ అయ్యింది: " + (error.message || "Internal Error") },
+      { error: "సర్వర్ లో ఏదో సమస్య ఉంది, మళ్ళీ ప్రయత్నించండి." },
       { status: 500 }
     );
   }
