@@ -1,8 +1,9 @@
 import NextAuth from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// ఈ లైన్ బిల్డ్ టైమ్ ఎర్రర్ రాకుండా కాపాడుతుంది
+// ఇది వెర్సెల్ బిల్డ్ ఎర్రర్‌ని ఆపడానికి అతి ముఖ్యమైన లైన్
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const handler = NextAuth(authOptions);
 
