@@ -1,8 +1,6 @@
 import NextAuth from "next-auth";
 import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
-import SlackProvider from "next-auth/providers/slack";
-import DiscordProvider from "next-auth/providers/discord";
 
 const handler = NextAuth({
   providers: [
@@ -19,33 +17,19 @@ const handler = NextAuth({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
       authorization: {
-        params: {
-          scope: "openid email profile https://www.googleapis.com/auth/youtube.upload",
-        },
+        params: { scope: "openid email profile https://www.googleapis.com/auth/youtube.upload" },
       },
-    }),
-    SlackProvider({
-      clientId: process.env.SLACK_CLIENT_ID!,
-      clientSecret: process.env.SLACK_CLIENT_SECRET!,
-      authorization: { params: { scope: "incoming-webhook,chat:write" } },
-    }),
-    DiscordProvider({
-      clientId: process.env.DISCORD_CLIENT_ID!,
-      clientSecret: process.env.DISCORD_CLIENT_SECRET!,
-      authorization: { params: { scope: "identify guilds email messages.read" } },
     }),
   ],
   callbacks: {
     async jwt({ token, account }) {
       if (account) {
         token.accessToken = account.access_token;
-        token.provider = account.provider;
       }
       return token;
     },
     async session({ session, token }: any) {
       session.accessToken = token.accessToken;
-      session.provider = token.provider;
       return session;
     },
   },
