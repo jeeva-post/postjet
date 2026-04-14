@@ -1,10 +1,10 @@
-// import "./globals.css";
-// మనం @/ బదులు నేరుగా అడ్రస్ ఇస్తున్నాం (ఇది 100% పనిచేస్తుంది)
+// @ts-ignore
+import "./globals.css"; 
 import { Providers } from "../components/Providers"; 
 
 export const metadata = {
-  title: "PostJet - Social Media Manager",
-  description: "Manage your social media with ease",
+  title: "PostJet - Global Social Media Manager",
+  description: "Automate your global social presence from one place",
 };
 
 export default function RootLayout({
@@ -14,7 +14,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning={true}>
+      <body suppressHydrationWarning={true} className="bg-[#f1f5f9]">
         <Providers>
           {children}
         </Providers>
