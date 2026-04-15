@@ -7,18 +7,16 @@ export async function POST(req: Request) {
   try {
     const { content, platforms, accessToken, mediaUrl } = await req.json();
     
-    // Improved Video Detection for Cloudinary
-    const isVideo = mediaUrl?.includes("/video/") || mediaUrl?.match(/\.(mp4|mov|avi|webm)$/i);
+    // Cloudinary వీడియో లింక్ ని పక్కాగా గుర్తుపట్టే లాజిక్
+    const isVideoFile = mediaUrl?.includes("/video/") || mediaUrl?.match(/\.(mp4|mov|avi|webm|mkv|m4v)$/i);
     
+    console.log("🚀 BLAST STARTED. File Type: ", isVideoFile ? "VIDEO" : "IMAGE");
+
     const tasks = [];
-    if (platforms.includes("telegram")) {
-      tasks.push(postToTelegram(content, mediaUrl, !!isVideo));
-    }
-    if (platforms.includes("facebook")) {
-      tasks.push(postToFacebook(content, mediaUrl, !!isVideo, accessToken));
-    }
+    if (platforms.includes("telegram")) tasks.push(postToTelegram(content, mediaUrl, !!isVideoFile));
+    if (platforms.includes("facebook")) tasks.push(postToFacebook(content, mediaUrl, !!isVideoFile, accessToken));
     if (platforms.includes("instagram") && mediaUrl) {
-      tasks.push(postToInstagram(content, mediaUrl, !!isVideo, accessToken));
+      tasks.push(postToInstagram(content, mediaUrl, !!isVideoFile, accessToken));
     }
 
     const results = await Promise.allSettled(tasks);
