@@ -23,7 +23,22 @@ const authOptions: NextAuthOptions = {
     LinkedInProvider({
       clientId: process.env.LINKEDIN_CLIENT_ID!,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-      authorization: { params: { scope: "openid profile email w_member_social" } },
+      client: {
+        token_endpoint_auth_method: "client_secret_post",
+      },
+      issuer: "https://www.linkedin.com/oauth",
+      jwks_endpoint: "https://www.linkedin.com/oauth/openid/jwks",
+      authorization: {
+        params: { scope: "openid profile email w_member_social" },
+      },
+      profile(profile) {
+        return {
+          id: profile.sub,
+          name: profile.name,
+          email: profile.email,
+          image: profile.picture,
+        };
+      },
     }),
     PinterestProvider({
       clientId: process.env.PINTEREST_CLIENT_ID!,
@@ -42,6 +57,8 @@ const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
+  // Debug mode ఆన్ చేశాను, ఎర్రర్ వస్తే లాగ్స్ లో కనిపిస్తుంది
+  debug: true,
 };
 
 const handler = NextAuth(authOptions);
