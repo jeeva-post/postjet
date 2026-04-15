@@ -2,13 +2,15 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 
-const authOptions: NextAuthOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
       authorization: {
-        params: { scope: "email,public_profile,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish" },
+        params: { 
+          scope: "email,public_profile,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish" 
+        },
       },
     }),
     GoogleProvider({
@@ -28,7 +30,6 @@ const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-  session: { strategy: "jwt" },
 };
 
 const handler = NextAuth(authOptions);
