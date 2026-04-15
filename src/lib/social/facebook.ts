@@ -6,30 +6,21 @@ export async function postToFacebook(content: string, mediaUrl: string | null, i
     
     if (accountsData.error) throw new Error(`FB Auth Error: ${accountsData.error.message}`);
     const page = accountsData.data?.find((p: any) => p.id === pageId);
-    if (!page) throw new Error(`Page ID (${pageId}) match failed.`);
+    if (!page) throw new Error("Facebook Page match failed.");
 
     const pageAccessToken = page.access_token;
-    let endpoint = `/${pageId}/feed`;
-    const body: any = { access_token: pageAccessToken };
-
+    let endpoint = mediaUrl ? (isVideo ? `/${pageId}/videos` : `/${pageId}/photos`) : `/${pageId}/feed`;
+    const fbBody: any = { access_token: pageAccessToken };
+    
     if (mediaUrl) {
-      if (isVideo) {
-        endpoint = `/${pageId}/videos`;
-        body.file_url = mediaUrl;
-        body.description = content;
-      } else {
-        endpoint = `/${pageId}/photos`;
-        body.url = mediaUrl;
-        body.caption = content;
-      }
-    } else {
-      body.message = content;
-    }
+      if (isVideo) { fbBody.file_url = mediaUrl; fbBody.description = content; }
+      else { fbBody.url = mediaUrl; fbBody.caption = content; }
+    } else fbBody.message = content;
 
     const res = await fetch(`https://graph.facebook.com${endpoint}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
+      body: JSON.stringify(fbBody),
     });
     
     const result = await res.json();

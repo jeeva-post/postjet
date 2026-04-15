@@ -6,8 +6,6 @@ import { postToInstagram } from "@/lib/social/instagram";
 export async function POST(req: Request) {
   try {
     const { content, platforms, accessToken, mediaUrl } = await req.json();
-    
-    // క్లౌడినరీ వీడియో అని గుర్తుపట్టే లాజిక్
     const isVideo = mediaUrl?.includes("/video/") || mediaUrl?.match(/\.(mp4|mov|avi|webm)$/i);
     const tasks = [];
 
