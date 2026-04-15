@@ -1,13 +1,11 @@
 export async function postToLinkedIn(content: string, mediaUrl: string | null, isVideo: boolean, accessToken: string) {
   try {
-    // 1. ముందుగా నీ లింక్డిన్ Profile ID (URN) ని తెచ్చుకోవాలి
     const userRes = await fetch("https://api.linkedin.com/v2/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const userData = await userRes.json();
     const personURN = `urn:li:person:${userData.sub}`;
 
-    // 2. పోస్ట్ బాడీని తయారు చేయడం
     const body: any = {
       author: personURN,
       commentary: content,
@@ -17,13 +15,7 @@ export async function postToLinkedIn(content: string, mediaUrl: string | null, i
     };
 
     if (mediaUrl) {
-      body.content = {
-        article: {
-          title: "PostJet Update",
-          description: content,
-          source: mediaUrl,
-        }
-      };
+      body.content = { article: { title: "Shared via PostJet", description: content, source: mediaUrl } };
     }
 
     const res = await fetch("https://api.linkedin.com/rest/posts", {
@@ -31,7 +23,7 @@ export async function postToLinkedIn(content: string, mediaUrl: string | null, i
       headers: {
         Authorization: `Bearer ${accessToken}`,
         "Content-Type": "application/json",
-        "LinkedIn-Version": "202401", // లేటెస్ట్ వర్షన్
+        "LinkedIn-Version": "202401",
       },
       body: JSON.stringify(body),
     });

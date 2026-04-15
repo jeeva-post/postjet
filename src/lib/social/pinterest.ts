@@ -11,10 +11,7 @@ export async function postToPinterest(content: string, mediaUrl: string, accessT
       },
       body: JSON.stringify({
         board_id: boardId,
-        media_source: {
-          source_type: "image_url",
-          url: mediaUrl,
-        },
+        media_source: { source_type: "image_url", url: mediaUrl },
         title: content.substring(0, 100),
         description: content,
       }),

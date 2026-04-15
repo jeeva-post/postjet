@@ -9,11 +9,7 @@ const authOptions: NextAuthOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
-      authorization: {
-        params: { 
-          scope: "email,public_profile,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish" 
-        },
-      },
+      authorization: { params: { scope: "email,public_profile,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish" } },
     }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -23,21 +19,12 @@ const authOptions: NextAuthOptions = {
     LinkedInProvider({
       clientId: process.env.LINKEDIN_CLIENT_ID!,
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-      client: {
-        token_endpoint_auth_method: "client_secret_post",
-      },
+      client: { token_endpoint_auth_method: "client_secret_post" },
       issuer: "https://www.linkedin.com/oauth",
       jwks_endpoint: "https://www.linkedin.com/oauth/openid/jwks",
-      authorization: {
-        params: { scope: "openid profile email w_member_social" },
-      },
+      authorization: { params: { scope: "openid profile email w_member_social" } },
       profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture,
-        };
+        return { id: profile.sub, name: profile.name, email: profile.email, image: profile.picture };
       },
     }),
     PinterestProvider({
@@ -48,7 +35,7 @@ const authOptions: NextAuthOptions = {
   ],
   callbacks: {
     async jwt({ token, account }) {
-      if (account) { token.accessToken = account.access_token; }
+      if (account) token.accessToken = account.access_token;
       return token;
     },
     async session({ session, token }: any) {
@@ -57,7 +44,6 @@ const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-  // Debug mode ఆన్ చేశాను, ఎర్రర్ వస్తే లాగ్స్ లో కనిపిస్తుంది
   debug: true,
 };
 
