@@ -3,10 +3,10 @@ export async function postToFacebook(content: string, mediaUrl: string | null, i
     const pageId = process.env.FACEBOOK_PAGE_ID;
     const accountsRes = await fetch(`https://graph.facebook.com/me/accounts?access_token=${accessToken}`);
     const accountsData = await accountsRes.json();
-    
     if (accountsData.error) throw new Error(`FB Auth Error: ${accountsData.error.message}`);
+
     const page = accountsData.data?.find((p: any) => p.id === pageId);
-    if (!page) throw new Error("Facebook Page match failed.");
+    if (!page) throw new Error("FB Page matching failed.");
 
     const pageAccessToken = page.access_token;
     let endpoint = mediaUrl ? (isVideo ? `/${pageId}/videos` : `/${pageId}/photos`) : `/${pageId}/feed`;
@@ -22,7 +22,6 @@ export async function postToFacebook(content: string, mediaUrl: string | null, i
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(fbBody),
     });
-    
     const result = await res.json();
     if (result.error) throw new Error(result.error.message);
     return { success: true, id: result.id, platform: "facebook" };

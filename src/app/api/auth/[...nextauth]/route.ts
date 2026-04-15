@@ -2,7 +2,6 @@ import NextAuth, { NextAuthOptions } from "next-auth";
 import FacebookProvider from "next-auth/providers/facebook";
 import GoogleProvider from "next-auth/providers/google";
 
-// ఇక్కడ 'export' తీసేశాను, అప్పుడే బిల్డ్ సక్సెస్ అవుతుంది
 const authOptions: NextAuthOptions = {
   providers: [
     FacebookProvider({
