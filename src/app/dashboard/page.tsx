@@ -14,7 +14,7 @@ export default function Dashboard() {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>([]);
   const [isPosting, setIsPosting] = useState(false);
 
-  // --- Image Upload States ---
+  // --- Media Upload States ---
   const [mediaUrl, setMediaUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -26,7 +26,7 @@ export default function Dashboard() {
     { id: "telegram", name: "Telegram Channel", icon: Send, color: "#0088cc", bgColor: "#e0f2fe" },
   ];
 
-  // --- Image Upload Handler ---
+  // --- Media Upload Handler (Handles both Images & Videos) ---
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -36,24 +36,29 @@ export default function Dashboard() {
     formData.append("file", file);
 
     try {
+      // Note: Make sure your /api/upload handles the cloudinary upload correctly
       const res = await fetch("/api/upload", { method: "POST", body: formData });
       const data = await res.json();
-      if (data.url) {
-        setMediaUrl(data.url);
+      
+      if (data.url || data.secure_url) {
+        setMediaUrl(data.secure_url || data.url);
       } else {
-        alert("Upload failed: " + data.error);
+        alert("Upload failed: " + (data.error || "Unknown error"));
       }
     } catch (err) {
-      alert("Error uploading file!");
+      alert("Error uploading file! Check your Cloudinary settings.");
     } finally {
       setIsUploading(false);
     }
   };
 
+  // --- Multi-Platform Post Handler ---
   const handlePost = async () => {
-    if (!postContent || selectedPlatforms.length === 0) return alert("Please add content and select a platform!");
-    setIsPosting(true);
+    // 🔥 Validation: Content లేదా Platforms లేకపోతే ఆపుతుంది
+    if (!postContent.trim()) return alert("Please type something in the composer, Jeevan!");
+    if (selectedPlatforms.length === 0) return alert("Please select at least one icon (FB, IG, YT, or TG)!");
 
+    setIsPosting(true);
     try {
       const response = await fetch("/api/post", {
         method: "POST",
@@ -62,7 +67,7 @@ export default function Dashboard() {
           content: postContent,
           platforms: selectedPlatforms,
           accessToken: session?.accessToken,
-          mediaUrl: mediaUrl, // Pass image URL to backend
+          mediaUrl: mediaUrl, 
         }),
       });
 
@@ -72,11 +77,12 @@ export default function Dashboard() {
         setIsModalOpen(false);
         setPostContent("");
         setMediaUrl("");
+        setSelectedPlatforms([]); // Reset selection
       } else {
-        alert("Error: " + data.error);
+        alert("Post error: " + (data.error || "Check your API connection"));
       }
     } catch (err) {
-      alert("Post failed!");
+      alert("Post failed! Something went wrong with the server.");
     } finally {
       setIsPosting(false);
     }
@@ -84,7 +90,7 @@ export default function Dashboard() {
 
   return (
     <div className="flex min-h-screen bg-[#f8fafc]">
-      {/* Sidebar - Emi marchaledu */}
+      {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col h-screen p-7">
         <div className="flex items-center gap-3 mb-10">
           <div className="bg-blue-600 p-2 rounded-lg text-white"><Send size={24} /></div>
@@ -117,10 +123,12 @@ export default function Dashboard() {
           </button>
         </header>
 
-        {/* Platform Cards - Ivvi kuda alaage untayi */}
+        {/* Platform Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {platforms.map((p) => {
-            const isConnected = (p.id === "facebook" && !!session) || (p.id === "telegram" && !!process.env.NEXT_PUBLIC_TELEGRAM_SET);
+            const isConnected = (p.id === "facebook" && !!session) || 
+                               (p.id === "youtube" && !!session) ||
+                               (p.id === "telegram"); // Custom logic based on your setup
             return (
               <div key={p.id} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-md transition-shadow">
                 <div className="flex justify-between items-start mb-6">
@@ -150,10 +158,10 @@ export default function Dashboard() {
         </div>
       </main>
 
-      {/* --- MODAL WITH GALLERY OPTION --- */}
+      {/* --- MODAL --- */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-md p-4">
-          <div className="bg-white w-full max-w-xl rounded-[3rem] p-10 shadow-2xl scale-in">
+          <div className="bg-white w-full max-w-xl rounded-[3rem] p-10 shadow-2xl animate-in zoom-in duration-300">
             <div className="flex justify-between items-center mb-8">
               <h2 className="text-3xl font-black italic">Post Composer</h2>
               <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-full transition-colors">
@@ -162,13 +170,19 @@ export default function Dashboard() {
             </div>
 
             {/* Platform Selector */}
+            <p className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3">Select Destinations</p>
             <div className="flex gap-3 mb-8">
               {platforms.map(p => (
                 <button 
                   key={p.id} 
-                  onClick={() => setSelectedPlatforms(prev => prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id])}
+                  type="button"
+                  onClick={() => setSelectedPlatforms(prev => 
+                    prev.includes(p.id) ? prev.filter(x => x !== p.id) : [...prev, p.id]
+                  )}
                   className={`p-4 rounded-2xl border-2 transition-all ${
-                    selectedPlatforms.includes(p.id) ? "border-blue-600 bg-blue-50 shadow-lg shadow-blue-100" : "border-slate-100 bg-slate-50"
+                    selectedPlatforms.includes(p.id) 
+                      ? "border-blue-600 bg-blue-50 shadow-lg shadow-blue-100 scale-105" 
+                      : "border-slate-100 bg-slate-50 hover:border-slate-200"
                   }`}
                 >
                   <p.icon size={24} style={{ color: selectedPlatforms.includes(p.id) ? p.color : "#94a3b8" }} />
@@ -180,16 +194,23 @@ export default function Dashboard() {
             <textarea 
               value={postContent} 
               onChange={(e) => setPostContent(e.target.value)} 
-              className="w-full h-44 p-6 bg-slate-50 rounded-[2rem] mb-6 focus:ring-4 focus:ring-blue-100 border-none outline-none text-lg font-medium placeholder:text-slate-300 transition-all" 
+              className="w-full h-44 p-6 bg-slate-50 rounded-[2rem] mb-6 focus:ring-4 focus:ring-blue-100 border-none outline-none text-lg font-medium placeholder:text-slate-300 transition-all resize-none" 
               placeholder="What's on your mind, Jeevan?" 
             />
 
-            {/* --- MEDIA UPLOAD SECTION (Gallery Option) --- */}
+            {/* Media Upload Section */}
             <div className="mb-8">
-              <input type="file" hidden ref={fileInputRef} onChange={handleFileUpload} accept="image/*" />
+              <input 
+                type="file" 
+                hidden 
+                ref={fileInputRef} 
+                onChange={handleFileUpload} 
+                accept="image/*,video/*" 
+              />
               
               {!mediaUrl ? (
                 <button 
+                  type="button"
                   onClick={() => fileInputRef.current?.click()}
                   disabled={isUploading}
                   className="flex items-center gap-3 text-slate-500 font-bold p-5 border-2 border-dashed border-slate-200 rounded-[2rem] w-full justify-center hover:bg-blue-50 hover:border-blue-200 transition-all group"
@@ -199,19 +220,23 @@ export default function Dashboard() {
                   ) : (
                     <>
                       <ImageIcon size={24} className="group-hover:text-blue-600 transition-colors" /> 
-                      <span>Add Photos from Gallery</span>
+                      <span>Add Photo / Video</span>
                     </>
                   )}
                 </button>
               ) : (
                 <div className="relative rounded-[2rem] overflow-hidden group border-4 border-slate-50 shadow-lg">
-                  <img src={mediaUrl} className="w-full h-56 object-cover" alt="Preview" />
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center">
+                  {mediaUrl.match(/\.(mp4|webm|ogg|mov)$/i) ? (
+                    <video src={mediaUrl} className="w-full h-56 object-cover" controls />
+                  ) : (
+                    <img src={mediaUrl} className="w-full h-56 object-cover" alt="Preview" />
+                  )}
+                  <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all">
                     <button 
                       onClick={() => setMediaUrl("")}
-                      className="bg-white text-red-500 p-3 rounded-full shadow-xl hover:scale-110 transition-transform"
+                      className="bg-white/90 text-red-500 p-2 rounded-full shadow-xl hover:bg-white transition-colors"
                     >
-                      <X size={24} />
+                      <X size={20} />
                     </button>
                   </div>
                 </div>
@@ -222,9 +247,14 @@ export default function Dashboard() {
             <button 
               onClick={handlePost} 
               disabled={isPosting || isUploading}
-              className="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+              className="w-full py-5 bg-blue-600 text-white rounded-[2rem] font-black text-xl shadow-2xl shadow-blue-200 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95"
             >
-              {isPosting ? "Blasting Post..." : "Post Now"}
+              {isPosting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <Loader2 className="animate-spin" /> 
+                  <span>Blasting...</span>
+                </div>
+              ) : "Post Now"}
             </button>
           </div>
         </div>
