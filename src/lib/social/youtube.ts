@@ -8,6 +8,10 @@ export async function postToYouTube(content: string, mediaUrl: string, accessTok
         status: { privacyStatus: "public" }
       })
     });
-    return await res.json();
-  } catch (err) { return { error: err }; }
+    const data = await res.json();
+    if (data.error) throw new Error("YouTube Error: " + data.error.message);
+    return data;
+  } catch (err: any) { 
+    return { error: err.message || "Unknown YouTube Error" }; 
+  }
 }
