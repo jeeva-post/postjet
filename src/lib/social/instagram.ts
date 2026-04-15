@@ -1,58 +1,50 @@
 export async function postToInstagram(content: string, mediaUrl: string, isVideo: boolean, accessToken: string) {
   try {
     const igId = process.env.INSTAGRAM_BUSINESS_ID;
-    if (!igId) throw new Error("Vercel Settings లో INSTAGRAM_BUSINESS_ID మిస్ అయ్యింది.");
+    if (!igId) throw new Error("INSTAGRAM_BUSINESS_ID missing in Vercel.");
 
-    console.log(`IG: Starting upload for ${isVideo ? "VIDEO" : "IMAGE"}`);
+    // క్లౌడినరీ లింక్ ని బట్టి అది నిజంగా వీడియోనా అని చెక్ చేయడం
+    const isRealVideo = mediaUrl.includes("/video/") || mediaUrl.match(/\.(mp4|mov|avi|webm)$/i);
 
-    // Step 1: Media Container క్రియేట్ చేయడం
-    const params = new URLSearchParams({
-      access_token: accessToken,
-      caption: content,
-      media_type: isVideo ? "VIDEO" : "IMAGE",
-      [isVideo ? "video_url" : "image_url"]: mediaUrl
+    console.log(`IG Posting: ${isRealVideo ? "VIDEO" : "IMAGE"}`);
+
+    // Container creation
+    const body: any = { access_token: accessToken, caption: content, media_type: isRealVideo ? "VIDEO" : "IMAGE" };
+    if (isRealVideo) body.video_url = mediaUrl;
+    else body.image_url = mediaUrl;
+
+    const cRes = await fetch(`https://graph.facebook.com/v19.0/${igId}/media`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body)
     });
-
-    const cRes = await fetch(`https://graph.facebook.com/v19.0/${igId}/media?${params.toString()}`, { method: "POST" });
     const cData = await cRes.json();
+    if (cData.error) throw new Error("Container Error: " + cData.error.message);
 
-    if (cData.error) throw new Error("IG Container Error: " + cData.error.message);
     const creationId = cData.id;
 
-    // 🔥 వీడియో అయితే అది రెడీ అయ్యే వరకు వెయిట్ చేయడం (Polling)
-    if (isVideo) {
-      console.log("IG: Video detected. Waiting for processing...");
+    // Polling Logic for Video
+    if (isRealVideo) {
       let status = "IN_PROGRESS";
-      let attempts = 0;
-
-      while (status !== "FINISHED" && attempts < 12) { // గరిష్టంగా 2 నిమిషాలు
-        attempts++;
-        console.log(`IG: Checking status... Attempt ${attempts}`);
-        
-        await new Promise(r => setTimeout(r, 10000)); // 10 సెకన్లు ఆగుతుంది
-        
+      for (let i = 0; i < 15; i++) {
+        await new Promise(r => setTimeout(r, 10000));
         const sRes = await fetch(`https://graph.facebook.com/v19.0/${creationId}?fields=status_code&access_token=${accessToken}`);
         const sData = await sRes.json();
-        
         status = sData.status_code;
         if (status === "FINISHED") break;
-        if (status === "ERROR") throw new Error("IG Video processing failed on their server.");
+        if (status === "ERROR") throw new Error("IG processing failed.");
       }
-      
-      if (status !== "FINISHED") throw new Error("Instagram Video processing took too long.");
+    } else {
+      await new Promise(r => setTimeout(r, 5000));
     }
 
-    // Step 2: మీడియా ని పబ్లిష్ చేయడం
-    console.log("IG: Media ready. Publishing now...");
+    // Publish
     const pRes = await fetch(`https://graph.facebook.com/v19.0/${igId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`, { method: "POST" });
     const pData = await pRes.json();
-
-    if (pData.error) throw new Error("IG Publish Error: " + pData.error.message);
+    if (pData.error) throw new Error("Publish Error: " + pData.error.message);
 
     return { success: true, id: pData.id, platform: "instagram" };
-
-  } catch (err: any) {
-    console.error("IG ENGINE ERROR:", err.message);
-    return { success: false, error: err.message, platform: "instagram" };
+  } catch (err: any) { 
+    return { success: false, error: err.message, platform: "instagram" }; 
   }
 }
