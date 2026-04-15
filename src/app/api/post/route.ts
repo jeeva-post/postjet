@@ -1,32 +1,31 @@
 import { NextResponse } from "next/server";
 import { postToFacebook } from "@/lib/social/facebook";
 import { postToTelegram } from "@/lib/social/telegram";
-import { postToInstagram } from "@/lib/social/instagram"; // కొత్త ఇంపోర్ట్
+import { postToInstagram } from "@/lib/social/instagram";
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
     const { content, platforms, accessToken, mediaUrl } = body;
 
-    // మీడియా టైప్ ని చెక్ చేయడం
+    // మీడియా టైప్ ని చెక్ చేయడం (Cloudinary URL ని బట్టి)
     const isVideo = mediaUrl?.match(/\.(mp4|mov|avi|mkv|webm)$/i);
 
-    console.log("🚀 BLAST SEQUENCE STARTED for platforms:", platforms);
+    console.log("🚀 BLAST SEQUENCE STARTED for:", platforms);
 
     const tasks = [];
 
-    // --- 1. TELEGRAM (దీన్ని మనం మార్చలేదు) ---
+    // --- 1. TELEGRAM ---
     if (platforms.includes("telegram")) {
       tasks.push(postToTelegram(content, mediaUrl, !!isVideo));
     }
 
-    // --- 2. FACEBOOK (నీకు సక్సెస్ అయిన పాత కోడ్ ఇదే, దీన్ని అస్సలు ముట్టుకోలేదు) ---
+    // --- 2. FACEBOOK (నీకు సక్సెస్ అయిన పాత కోడ్ ఇది, దీన్ని అస్సలు మార్చలేదు) ---
     if (platforms.includes("facebook")) {
       tasks.push(postToFacebook(content, mediaUrl, !!isVideo, accessToken));
     }
 
-    // --- 3. INSTAGRAM (కొత్తగా పక్కన అమర్చాం) ---
-    // గమనిక: ఇన్స్టాగ్రామ్ కి మీడియా URL కచ్చితంగా ఉండాలి
+    // --- 3. INSTAGRAM (వీడియో పోలింగ్ లాజిక్ ఉన్న కొత్త ఇంజిన్) ---
     if (platforms.includes("instagram") && mediaUrl) {
       tasks.push(postToInstagram(content, mediaUrl, !!isVideo, accessToken));
     }
@@ -35,9 +34,9 @@ export async function POST(req: Request) {
     const results = await Promise.allSettled(tasks);
 
     // ఫలితాలను మనకు అర్థమయ్యేలా మార్చడం
-    const formattedResults = results.map((res: any) => {
+    const debugResults = results.map((res: any) => {
       if (res.status === "fulfilled") {
-        return res.value;
+        return res.value; // సక్సెస్ రిజల్ట్
       } else {
         return { 
           success: false, 
@@ -46,11 +45,11 @@ export async function POST(req: Request) {
       }
     });
 
-    console.log("✅ BLAST REPORT:", JSON.stringify(formattedResults, null, 2));
+    console.log("✅ BLAST REPORT:", JSON.stringify(debugResults, null, 2));
 
     return NextResponse.json({ 
       success: true, 
-      results: formattedResults 
+      results: debugResults 
     });
 
   } catch (error: any) {
