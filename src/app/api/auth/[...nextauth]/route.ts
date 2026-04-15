@@ -37,3 +37,4 @@ const handler = NextAuth({
 });
 
 export { handler as GET, handler as POST };
+console.log("Current Client ID:", process.env.GOOGLE_CLIENT_ID?.substring(0, 10) + "...");
