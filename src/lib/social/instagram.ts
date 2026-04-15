@@ -1,7 +1,7 @@
 export async function postToInstagram(content: string, mediaUrl: string, isVideo: boolean, accessToken: string) {
   try {
     const igId = process.env.INSTAGRAM_BUSINESS_ID;
-    if (!igId) throw new Error("Vercel లో INSTAGRAM_BUSINESS_ID సెట్ చేయలేదు.");
+    if (!igId) throw new Error("Vercel Settings లో INSTAGRAM_BUSINESS_ID మిస్ అయ్యింది.");
 
     // 1. Media Container క్రియేట్ చేయడం
     const containerParams = new URLSearchParams({
@@ -17,16 +17,34 @@ export async function postToInstagram(content: string, mediaUrl: string, isVideo
     const cData = await cRes.json();
 
     if (cData.error) throw new Error(`IG Container Error: ${cData.error.message}`);
+    const creationId = cData.id;
 
-    // 🔥 ముఖ్యమైనది: వీడియో అయితే ఇన్‌స్టాగ్రామ్ సర్వర్ ప్రాసెస్ చేయడానికి కొంచెం టైమ్ ఇస్తున్నాం
-    if (isVideo) {
-      console.log("Waiting 30 seconds for Instagram to process the video...");
-      await new Promise(resolve => setTimeout(resolve, 30000)); // 30 సెకన్లు వెయిట్ చేస్తుంది
+    // 2. 🔥 POLLING LOGIC: ఇన్‌స్టాగ్రామ్ సర్వర్ ని చెక్ చేయడం
+    let status = "IN_PROGRESS";
+    let attempts = 0;
+    const maxAttempts = 15; // గరిష్టంగా 150 సెకన్లు వెయిట్ చేస్తుంది (15 * 10s)
+
+    while (status !== "FINISHED" && attempts < maxAttempts) {
+      console.log(`Checking IG Media status... Attempt: ${attempts + 1}`);
+      
+      // ప్రతి చెక్ కి మధ్య 10 సెకన్ల విరామం
+      await new Promise(r => setTimeout(r, 10000));
+      
+      const statusRes = await fetch(`https://graph.facebook.com/v19.0/${creationId}?fields=status_code&access_token=${accessToken}`);
+      const statusData = await statusRes.json();
+      
+      status = statusData.status_code;
+      
+      if (status === "ERROR") throw new Error("Instagram processing failed on their server.");
+      if (status === "FINISHED") break;
+      
+      attempts++;
     }
 
-    // 2. మీడియా ని పబ్లిష్ చేయడం
-    const publishUrl = `https://graph.facebook.com/v19.0/${igId}/media_publish`;
-    const pRes = await fetch(`${publishUrl}?creation_id=${cData.id}&access_token=${accessToken}`, { 
+    if (status !== "FINISHED") throw new Error("Instagram processing timed out. Video might be too large.");
+
+    // 3. ఇప్పుడు పబ్లిష్ చేయడం (Media Ready అయ్యాక)
+    const pRes = await fetch(`https://graph.facebook.com/v19.0/${igId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`, { 
       method: "POST" 
     });
     const pData = await pRes.json();
@@ -36,6 +54,7 @@ export async function postToInstagram(content: string, mediaUrl: string, isVideo
     return { success: true, id: pData.id, platform: "instagram" };
 
   } catch (err: any) {
+    console.error("Instagram Repair Log:", err.message);
     return { success: false, error: err.message, platform: "instagram" };
   }
 }
