@@ -3,25 +3,48 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
-    
-    // వెర్సెల్ లో నువ్వు ఇచ్చిన ఐడీ మరియు టోకెన్
-    const personId = process.env.LINKEDIN_CLIENT_ID; 
     const accessToken = process.env.LINKEDIN_CLIENT_SECRET;
 
-    if (!personId || !accessToken) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Vercel లో LINKEDIN_CLIENT_ID లేదా SECRET(Token) దొరకలేదు!" 
-      });
+    if (!accessToken) {
+      return NextResponse.json({ success: false, error: "Vercel లో Token లేదు!" });
     }
 
-    // పోయినసారి ఎర్రర్ ప్రకారం 'person' బదులు 'member' వాడుతున్నాం
-    const myMemberUrn = `urn:li:member:${personId.trim()}`;
+    const token = accessToken.trim();
+
+    // --- STEP 1: నీ అసలు 'Numeric' ID ని కనుక్కోవడం ---
+    // మనం రెండు రకాలుగా ట్రై చేద్దాం
+    let linkedinId = "";
     
+    // పద్ధతి A: కొత్త OpenID పద్ధతి
+    const userinfoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const userInfo = await userinfoRes.json();
+    
+    if (userInfo.sub) {
+        linkedinId = userInfo.sub; // ఇది అంకెల్లో ఉండే అవకాశం ఉంది
+    } else {
+        // పద్ధతి B: పాత v2/me పద్ధతి
+        const meRes = await fetch("https://api.linkedin.com/v2/me", {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const meData = await meRes.json();
+        linkedinId = meData.id;
+    }
+
+    if (!linkedinId) {
+      return NextResponse.json({ success: false, error: "LinkedIn ID ని కనుక్కోలేకపోయాము. పర్మిషన్స్ చెక్ చెయ్యి." });
+    }
+
+    // --- STEP 2: పోస్ట్ చేయడం ---
     const linkedinUrl = "https://api.linkedin.com/v2/ugcPosts";
+    
+    // ఒకవేళ ఐడీలో అక్షరాలు ఉంటే 'person', కేవలం అంకెలు ఉంటే 'member' గా ట్రై చేద్దాం
+    const isNumeric = /^\d+$/.test(linkedinId);
+    const authorUrn = isNumeric ? `urn:li:member:${linkedinId}` : `urn:li:person:${linkedinId}`;
 
     const body: any = {
-      author: myMemberUrn,
+      author: authorUrn,
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
@@ -36,9 +59,9 @@ export async function POST(req: Request) {
       body.specificContent["com.linkedin.ugc.ShareContent"].media = [
         {
           status: "READY",
-          description: { text: "PostJet Professional Content" },
+          description: { text: "Professional Content" },
           media: mediaUrl,
-          title: { text: "Shared via PostJet" },
+          title: { text: "PostJet Broadcast" },
         },
       ];
     }
@@ -46,7 +69,7 @@ export async function POST(req: Request) {
     const res = await fetch(linkedinUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${accessToken.trim()}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
         "X-Restli-Protocol-Version": "2.0.0",
       },
@@ -56,10 +79,9 @@ export async function POST(req: Request) {
     const data = await res.json();
 
     if (res.status !== 201) {
-      // లింక్డ్‌ఇన్ ఇచ్చే అసలు ఎర్రర్ ని ఇక్కడ పట్టుకుంటున్నాం
       return NextResponse.json({ 
         success: false, 
-        error: `LinkedIn: ${data.message || "Invalid Token or Scope"}` 
+        error: `LinkedIn: ${data.message || "Data Processing Error"}` 
       });
     }
 
