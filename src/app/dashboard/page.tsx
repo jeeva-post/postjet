@@ -1,40 +1,47 @@
 "use client";
 import { useState } from "react";
 
-export default function GlobalSaaSDashboard() {
+export default function GlobalDashboard() {
   const [content, setContent] = useState("");
   const [mediaUrl, setMediaUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [uploading, setUploading] = useState(false);
 
-  // 📁 సిస్టమ్ గ్యాలరీ నుండి అప్‌లోడ్ చేయడం
+  // 📁 ఇమేజ్/వీడియో అప్‌లోడ్ లాజిక్ (నీ స్వంత వివరాలతో)
   const handleFileUpload = async (e: any) => {
     const file = e.target.files[0];
     if (!file) return;
 
     setUploading(true);
-    setStatus("📤 Media అప్‌లోడ్ అవుతోంది...");
+    setStatus("📤 Media అప్‌లోడ్ అవుతోంది... ఆగండి.");
+
+    // నీ పర్సనల్ క్లౌడ్ వివరాలు ఇక్కడ ఉన్నాయి
+    const CLOUD_NAME = "dd0kewyk5"; 
+    const UPLOAD_PRESET = "postjet_preset"; 
 
     const formData = new FormData();
     formData.append("file", file);
-    formData.append("upload_preset", "postjet_preset"); // నీ Cloudinary Unsigned Preset పేరు
+    formData.append("upload_preset", UPLOAD_PRESET);
 
     try {
-      const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_NAME || "dvp8p7pqt"; 
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/upload`, {
+      // Unsigned అప్‌లోడ్ పద్ధతి - దీనికి API Key అవసరం లేదు
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
         method: "POST",
         body: formData,
       });
+      
       const data = await res.json();
+      
       if (data.secure_url) {
-        setMediaUrl(data.secure_url);
-        setStatus("✅ Media సిద్ధంగా ఉంది!");
+        setMediaUrl(data.secure_url); 
+        setStatus("✅ Media Ready! ప్రివ్యూ చూడండి.");
       } else {
-        setStatus("❌ Cloudinary Error: " + (data.error?.message || "Upload failed"));
+        // ఇక్కడ ఎర్రర్ వస్తే క్లియర్ గా చూపిస్తుంది
+        setStatus(`❌ Error: ${data.error?.message || "Cloudinary గుర్తించలేకపోయింది"}`);
       }
     } catch (err) {
-      setStatus("❌ అప్‌లోడ్ ఫెయిల్ అయింది.");
+      setStatus("❌ నెట్‌వర్క్ ఇబ్బంది. మళ్ళీ ట్రై చెయ్యి.");
     } finally {
       setUploading(false);
     }
@@ -42,6 +49,7 @@ export default function GlobalSaaSDashboard() {
 
   const handlePost = async (platform: string) => {
     if (!content && !mediaUrl) return alert("టెక్స్ట్ లేదా ఇమేజ్ ఏదో ఒకటి ఉండాలి!");
+    
     setLoading(true);
     setStatus(`🚀 ${platform} కి పంపిస్తున్నాను...`);
 
@@ -54,48 +62,55 @@ export default function GlobalSaaSDashboard() {
 
       const data = await res.json();
       if (data.success) {
-        setStatus(`✅ ${platform} లో పోస్ట్ అయింది!`);
+        setStatus(`✅ ${platform} లో సక్సెస్‌ఫుల్‌గా పోస్ట్ అయింది!`);
       } else {
-        const errorMsg = data.error || data.message || "Unknown Error";
-        setStatus(`❌ ఎర్రర్: ${errorMsg}`);
+        setStatus(`❌ ఎర్రర్: ${data.error || "ఏదో పొరపాటు జరిగింది"}`);
       }
     } catch (err) {
-      setStatus("❌ కనెక్షన్ ఎర్రర్.");
+      setStatus("❌ కనెక్షన్ ఫెయిల్ అయింది.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#F0F2F5] p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
       <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* ఎడమ వైపు: పోస్ట్ మేకర్ */}
-        <div className="lg:col-span-7 bg-white p-8 rounded-3xl shadow-sm border border-slate-200">
-          <h1 className="text-2xl font-black text-slate-800 mb-6">PostJet <span className="text-blue-600 italic">Composer</span></h1>
+        {/* ఎడమ వైపు: పోస్ట్ కంపోజర్ (SaaS Style) */}
+        <div className="lg:col-span-7 bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 space-y-6">
+          <div className="flex justify-between items-center">
+             <h1 className="text-3xl font-black text-slate-800 tracking-tight italic">
+               PostJet <span className="text-blue-600 not-italic">Pro</span>
+             </h1>
+             <span className="bg-blue-100 text-blue-700 text-[10px] px-3 py-1 rounded-full font-bold uppercase">Enterprise Version</span>
+          </div>
           
           <textarea
-            className="w-full p-6 bg-slate-50 border border-slate-200 rounded-2xl h-60 outline-none focus:ring-4 focus:ring-blue-100 transition-all text-lg"
+            className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl h-60 outline-none focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder:text-slate-300 shadow-inner"
             placeholder="మీ గ్లోబల్ మెసేజ్ ఇక్కడ రాయండి..."
             value={content}
             onChange={(e) => setContent(e.target.value)}
           />
 
-          <div className="mt-6 space-y-4">
+          <div className="space-y-4">
             <label className="block cursor-pointer">
-              <div className="flex items-center justify-center gap-3 bg-blue-50 border-2 border-dashed border-blue-200 p-5 rounded-2xl hover:bg-blue-100 transition-all text-blue-700 font-bold">
-                <span>📷 {uploading ? "Uploading..." : "Open System Media Library"}</span>
+              <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-dashed border-blue-200 p-6 rounded-3xl hover:from-blue-100 hover:to-indigo-100 transition-all group">
+                <span className="text-3xl group-hover:scale-110 transition-transform">📁</span>
+                <span className="font-bold text-blue-800">
+                  {uploading ? "అప్‌లోడ్ అవుతోంది..." : "సిస్టమ్ గ్యాలరీ నుండి సెలెక్ట్ చెయ్యి"}
+                </span>
               </div>
               <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileUpload} />
             </label>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-              {["whatsapp", "telegram", "facebook", "instagram", "linkedin", "youtube"].map((app) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
+              {["whatsapp", "facebook", "instagram", "linkedin", "telegram", "youtube"].map((app) => (
                 <button
                   key={app}
                   onClick={() => handlePost(app)}
                   disabled={loading || uploading}
-                  className="bg-slate-900 text-white p-4 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-blue-600 disabled:bg-slate-300 transition-all shadow-md active:scale-95"
+                  className="bg-slate-900 text-white p-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 shadow-md"
                 >
                   Post to {app}
                 </button>
@@ -104,13 +119,14 @@ export default function GlobalSaaSDashboard() {
           </div>
         </div>
 
-        {/* కుడి వైపు: లైవ్ ప్రివ్యూ */}
+        {/* కుడి వైపు: లైవ్ ప్రివ్యూ (ఇక్కడ ఇమేజ్ కనిపిస్తుంది) */}
         <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-            <h3 className="text-xs font-black text-slate-400 uppercase mb-4 tracking-widest">Live Feed Preview</h3>
-            <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100 min-h-[350px]">
+          <div className="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 ml-2">Live Broadcast Preview</h3>
+            
+            <div className="bg-slate-100 rounded-[2rem] p-5 border border-slate-200 min-h-[450px] shadow-inner">
               {mediaUrl ? (
-                <div className="w-full mb-4 rounded-xl overflow-hidden shadow-sm bg-black">
+                <div className="w-full mb-5 rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
                   {mediaUrl.includes("video") ? (
                     <video src={mediaUrl} className="w-full h-auto" controls />
                   ) : (
@@ -118,13 +134,18 @@ export default function GlobalSaaSDashboard() {
                   )}
                 </div>
               ) : (
-                <div className="w-full aspect-video bg-slate-200 rounded-xl mb-4 flex items-center justify-center text-slate-400 italic text-sm">Media Preview Area</div>
+                <div className="w-full aspect-video bg-slate-200 rounded-2xl mb-5 flex items-center justify-center text-slate-400 italic text-sm">
+                   మీడియా సెలెక్ట్ కాలేదు
+                </div>
               )}
-              <p className="text-slate-700 whitespace-pre-wrap leading-relaxed">{content || "మీ మెసేజ్ ఇక్కడ కనిపిస్తుంది..."}</p>
+              <p className="text-slate-800 whitespace-pre-wrap leading-relaxed font-medium">
+                {content || "మీ మెసేజ్ యొక్క ప్రివ్యూ ఇక్కడ కనిపిస్తుంది..."}
+              </p>
             </div>
           </div>
-          <div className={`p-4 rounded-2xl font-bold text-center text-sm shadow-sm border ${status.includes("✅") ? "bg-green-50 text-green-700 border-green-100" : "bg-blue-50 text-blue-700 border-blue-100"}`}>
-            {status || "Ready to connect globally"}
+
+          <div className={`p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest shadow-lg transition-all border-2 ${status.includes("✅") ? "bg-green-50 text-green-700 border-green-200" : "bg-white text-blue-700 border-blue-100"}`}>
+            {status || "Ready to connect the world"}
           </div>
         </div>
 
