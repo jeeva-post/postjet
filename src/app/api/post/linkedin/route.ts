@@ -3,27 +3,34 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
+    const accessToken = process.env.LINKEDIN_CLIENT_SECRET; // నీ Access Token
+
+    if (!accessToken) {
+      return NextResponse.json({ success: false, error: "Vercel లో Token లేదు!" });
+    }
+
+    // --- STEP 1: నీ అసలు LinkedIn ID ని ఆటోమేటిక్ గా కనుక్కోవడం ---
+    const meRes = await fetch("https://api.linkedin.com/v2/me", {
+      headers: { Authorization: `Bearer ${accessToken.trim()}` },
+    });
+    const meData = await meRes.json();
     
-    // వెర్సెల్ నుండి నీ వేరియబుల్స్ తీసుకుంటున్నాం
-    const pId = process.env.LINKEDIN_CLIENT_ID; 
-    const secret = process.env.LINKEDIN_CLIENT_SECRET;
-
-    // ఇక్కడ ఏ కీ మిస్ అయిందో మనకు అర్థమైపోతుంది
-    if (!pId) {
-        return NextResponse.json({ success: false, error: "Vercel లో LINKEDIN_CLIENT_ID దొరకలేదు!" });
-    }
-    if (!secret) {
-        return NextResponse.json({ success: false, error: "Vercel లో LINKEDIN_CLIENT_SECRET దొరకలేదు!" });
+    if (!meData.id) {
+      return NextResponse.json({ success: false, error: "LinkedIn ID ని పట్టుకోలేకపోయాము. టోకెన్ చెక్ చెయ్యి." });
     }
 
+    const myPersonUrn = `urn:li:person:${meData.id}`;
+    console.log("Found LinkedIn ID:", myPersonUrn);
+
+    // --- STEP 2: పోస్ట్ చేయడం ---
     const linkedinUrl = "https://api.linkedin.com/v2/ugcPosts";
 
     const body: any = {
-      author: `urn:li:person:${pId.trim()}`,
+      author: myPersonUrn,
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
-          shareCommentary: { text: content || "" },
+          shareCommentary: { text: content || "PostJet Professional Broadcast" },
           shareMediaCategory: mediaUrl ? "IMAGE" : "NONE",
         },
       },
@@ -34,9 +41,9 @@ export async function POST(req: Request) {
       body.specificContent["com.linkedin.ugc.ShareContent"].media = [
         {
           status: "READY",
-          description: { text: "PostJet Post" },
+          description: { text: "Professional Post" },
           media: mediaUrl,
-          title: { text: "Image Shared via PostJet" },
+          title: { text: "Shared via PostJet" },
         },
       ];
     }
@@ -44,7 +51,7 @@ export async function POST(req: Request) {
     const res = await fetch(linkedinUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${secret.trim()}`,
+        Authorization: `Bearer ${accessToken.trim()}`,
         "Content-Type": "application/json",
         "X-Restli-Protocol-Version": "2.0.0",
       },
@@ -56,7 +63,7 @@ export async function POST(req: Request) {
     if (res.status !== 201) {
       return NextResponse.json({ 
         success: false, 
-        error: `LinkedIn Error: ${data.message || "Invalid Access Token"}` 
+        error: `LinkedIn: ${data.message || "Posting failed"}` 
       });
     }
 
