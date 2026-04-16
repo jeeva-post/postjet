@@ -3,46 +3,35 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
+    
+    // వెర్సెల్ నుండి వివరాలు
+    const personIdFromVercel = process.env.LINKEDIN_CLIENT_ID; 
     const accessToken = process.env.LINKEDIN_CLIENT_SECRET;
 
     if (!accessToken) {
-      return NextResponse.json({ success: false, error: "Vercel లో Token లేదు!" });
+      return NextResponse.json({ success: false, error: "Token లేదు!" });
     }
 
     const token = accessToken.trim();
+    let finalId = personIdFromVercel?.trim();
 
-    // --- STEP 1: నీ అసలు 'Numeric' ID ని కనుక్కోవడం ---
-    // మనం రెండు రకాలుగా ట్రై చేద్దాం
-    let linkedinId = "";
-    
-    // పద్ధతి A: కొత్త OpenID పద్ధతి
-    const userinfoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    const userInfo = await userinfoRes.json();
-    
-    if (userInfo.sub) {
-        linkedinId = userInfo.sub; // ఇది అంకెల్లో ఉండే అవకాశం ఉంది
-    } else {
-        // పద్ధతి B: పాత v2/me పద్ధతి
+    // ఒకవేళ వెర్సెల్ లో ఐడీ లేకపోతే, అప్పుడు మాత్రమే వెతకాలి
+    if (!finalId) {
         const meRes = await fetch("https://api.linkedin.com/v2/me", {
             headers: { Authorization: `Bearer ${token}` },
         });
         const meData = await meRes.json();
-        linkedinId = meData.id;
+        finalId = meData.id;
     }
 
-    if (!linkedinId) {
-      return NextResponse.json({ success: false, error: "LinkedIn ID ని కనుక్కోలేకపోయాము. పర్మిషన్స్ చెక్ చెయ్యి." });
+    if (!finalId) {
+      return NextResponse.json({ success: false, error: "LinkedIn ID దొరకట్లేదు. Vercel లో మ్యాన్యువల్ గా నెంబర్ ఐడీ ఇవ్వండి." });
     }
 
-    // --- STEP 2: పోస్ట్ చేయడం ---
+    // లింక్డ్‌ఇన్ కి పంపాల్సిన అసలు URN
+    const authorUrn = `urn:li:person:${finalId}`;
+
     const linkedinUrl = "https://api.linkedin.com/v2/ugcPosts";
-    
-    // ఒకవేళ ఐడీలో అక్షరాలు ఉంటే 'person', కేవలం అంకెలు ఉంటే 'member' గా ట్రై చేద్దాం
-    const isNumeric = /^\d+$/.test(linkedinId);
-    const authorUrn = isNumeric ? `urn:li:member:${linkedinId}` : `urn:li:person:${linkedinId}`;
-
     const body: any = {
       author: authorUrn,
       lifecycleState: "PUBLISHED",
@@ -59,9 +48,9 @@ export async function POST(req: Request) {
       body.specificContent["com.linkedin.ugc.ShareContent"].media = [
         {
           status: "READY",
-          description: { text: "Professional Content" },
+          description: { text: "PostJet Professional" },
           media: mediaUrl,
-          title: { text: "PostJet Broadcast" },
+          title: { text: "Broadcast via PostJet" },
         },
       ];
     }
@@ -81,12 +70,12 @@ export async function POST(req: Request) {
     if (res.status !== 201) {
       return NextResponse.json({ 
         success: false, 
-        error: `LinkedIn: ${data.message || "Data Processing Error"}` 
+        error: `LinkedIn: ${data.message || "Posting failed. Check ID/Token."}` 
       });
     }
 
     return NextResponse.json({ success: true, id: data.id });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: "Server Error occurred" });
+    return NextResponse.json({ success: false, error: "Server Error" });
   }
 }
