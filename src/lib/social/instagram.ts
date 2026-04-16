@@ -2,7 +2,7 @@ export async function postToInstagram(content: string, mediaUrl: string, isVideo
   try {
     console.log("📸 IG Engine: Starting process...");
 
-    // 1. Get the Instagram Business Account ID from the linked Facebook Page
+    // 1. Facebook Page ki link ayina Instagram ID ni tchukovadam
     const accountsRes = await fetch(`https://graph.facebook.com/v19.0/me/accounts?access_token=${accessToken}`);
     const accountsData = await accountsRes.json();
     
@@ -15,14 +15,12 @@ export async function postToInstagram(content: string, mediaUrl: string, isVideo
 
     if (!igUserId) throw new Error("Instagram Business Account not linked to this Facebook Page.");
 
-    // 2. Create Media Container (Video or Image)
+    // 2. Media Container (Video or Image) create cheyyadam
     let containerUrl = `https://graph.facebook.com/v19.0/${igUserId}/media?caption=${encodeURIComponent(content)}&access_token=${accessToken}`;
     
     if (isVideo) {
-      // Reels logic
       containerUrl += `&media_type=REELS&video_url=${encodeURIComponent(mediaUrl)}`;
     } else {
-      // Image logic
       containerUrl += `&image_url=${encodeURIComponent(mediaUrl)}`;
     }
 
@@ -34,10 +32,10 @@ export async function postToInstagram(content: string, mediaUrl: string, isVideo
 
     const creationId = containerData.id;
 
-    // 3. Wait & Publish (IG needs a few seconds for video processing)
+    // 3. Wait & Publish (Vercel timeout 10s kabatti, 4s mathrame wait chesthunnam)
     if (isVideo) {
-      console.log("⏳ IG Engine: Waiting for video processing...");
-      await new Promise(resolve => setTimeout(resolve, 10000)); // 10 seconds wait for Reels
+      console.log("⏳ IG Engine: Waiting for video processing (4s)...");
+      await new Promise(resolve => setTimeout(resolve, 4000)); 
     }
 
     console.log("📤 IG Engine: Publishing...");
