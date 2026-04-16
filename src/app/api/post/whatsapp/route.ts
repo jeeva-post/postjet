@@ -9,11 +9,10 @@ export async function POST(req: Request) {
     const recipient = process.env.WHATSAPP_RECIPIENT_ID;
 
     if (!phoneId || !token || !recipient) {
-      return NextResponse.json({ success: false, error: "Vercel Variables Missing" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Environment variables missing!" }, { status: 400 });
     }
 
-    // --- Media Type Detection (Improved) ---
-    // Cloudinary లింక్స్ లో ఒక్కోసారి చివర ఎక్స్‌టెన్షన్ ఉండదు, అందుకే "image/upload" లేదా "video/upload" ఉన్నాయో లేదో చూస్తున్నాం.
+    const safeContent = content || "";
     const isVideo = mediaUrl?.toLowerCase().match(/\.(mp4|mov|avi|webm)$/) || mediaUrl?.includes("/video/upload/");
     const isImage = mediaUrl?.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)$/) || mediaUrl?.includes("/image/upload/");
 
@@ -23,32 +22,24 @@ export async function POST(req: Request) {
       to: recipient,
     };
 
-    if (mediaUrl && isVideo) {
-      // 🎥 వీడియో లాజిక్
-      payload.type = "video";
-      payload.video = {
+    if (mediaUrl && (isImage || isVideo)) {
+      // 🖼️/🎥 మీడియా ఉంటే: వాట్సాప్ రూల్ ప్రకారం క్యాప్షన్ 1024 అక్షరాల లోపే ఉండాలి.
+      const type = isVideo ? "video" : "image";
+      payload.type = type;
+      payload[type] = {
         link: mediaUrl,
-        caption: content || ""
-      };
-    } else if (mediaUrl && isImage) {
-      // 🖼️ ఇమేజ్ లాజిక్
-      payload.type = "image";
-      payload.image = {
-        link: mediaUrl,
-        caption: content || ""
+        caption: safeContent.substring(0, 1020) // ఎర్రర్ రాకుండా 1020 కి కట్ చేస్తున్నాం.
       };
     } else {
-      // 📝 కేవలం టెక్స్ట్ లాజిక్
+      // 📝 కేవలం టెక్స్ట్ ఉంటే: వాట్సాప్ రూల్ ప్రకారం బాడీ 4096 అక్షరాల లోపే ఉండాలి.
       payload.type = "text";
       payload.text = {
         preview_url: true,
-        body: content ? `${content}${mediaUrl ? `\n\nLink: ${mediaUrl}` : ""}` : (mediaUrl || "")
+        body: (safeContent + (mediaUrl ? `\n\nLink: ${mediaUrl}` : "")).substring(0, 4090)
       };
     }
 
-    console.log(`🚀 Final Payload being sent to WhatsApp:`, JSON.stringify(payload));
-
-    const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+    const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
       method: "POST",
       headers: { 
         Authorization: `Bearer ${token}`, 
@@ -60,14 +51,12 @@ export async function POST(req: Request) {
     const data = await res.json();
 
     if (data.error) {
-      console.error("❌ Meta API Error:", data.error);
       return NextResponse.json({ success: false, error: data.error.message }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, messageId: data.messages[0].id });
 
   } catch (error: any) {
-    console.error("❌ System Error:", error.message);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }
