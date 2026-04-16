@@ -4,22 +4,24 @@ export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
     
-    // Vercel Environment Variables
-    const linkedinId = process.env.LINKEDIN_PERSON_ID; // నీ ప్రొఫైల్ ID (urn:li:person:XXXX)
-    const accessToken = process.env.LINKEDIN_ACCESS_TOKEN;
+    // నువ్వు అడిగిన పేర్లతోనే ఇక్కడ వేరియబుల్స్ తీసుకుంటున్నాను
+    // వెర్సెల్ లో నువ్వు ఇచ్చిన LINKEDIN_CLIENT_ID ని ఇక్కడ ID గా, 
+    // LINKEDIN_CLIENT_SECRET ని Access Token గా వాడుతున్నాం.
+    const personId = process.env.LINKEDIN_CLIENT_ID; 
+    const accessToken = process.env.LINKEDIN_CLIENT_SECRET;
 
-    if (!linkedinId || !accessToken) {
+    if (!personId || !accessToken) {
       return NextResponse.json({ 
         success: false, 
-        error: "Vercel సెట్టింగ్స్‌లో LinkedIn ID లేదా Token లేదు!" 
+        error: "Vercel సెట్టింగ్స్‌లో Client ID లేదా Secret (Token) కనిపించట్లేదు!" 
       });
     }
 
-    // LinkedIn API ద్వారా పోస్ట్ చేయడం
+    // LinkedIn API ద్వారా పోస్ట్ చేసే లాజిక్
     const linkedinUrl = "https://api.linkedin.com/v2/ugcPosts";
 
     const body: any = {
-      author: `urn:li:person:${linkedinId}`,
+      author: `urn:li:person:${personId}`,
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
@@ -30,12 +32,12 @@ export async function POST(req: Request) {
       visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
     };
 
-    // ఒకవేళ ఇమేజ్ ఉంటే దాన్ని జత చేయడం
+    // ఒకవేళ ఇమేజ్ ఉంటే జత చేయడం
     if (mediaUrl) {
       body.specificContent["com.linkedin.ugc.ShareContent"].media = [
         {
           status: "READY",
-          description: { text: "PostJet Professional Post" },
+          description: { text: "PostJet Professional Broadcast" },
           media: mediaUrl,
           title: { text: "Shared via PostJet" },
         },
@@ -54,15 +56,16 @@ export async function POST(req: Request) {
 
     const data = await res.json();
 
+    // లింక్డ్‌ఇన్ నుండి వచ్చే రెస్పాన్స్ ని చెక్ చేయడం
     if (res.status !== 201) {
       return NextResponse.json({ 
         success: false, 
-        error: data.message || "LinkedIn Auth Error" 
+        error: data.message || "LinkedIn Auth Error: మీ టోకెన్ లేదా ఐడి చెక్ చేసుకోండి." 
       });
     }
 
     return NextResponse.json({ success: true, id: data.id });
   } catch (err: any) {
-    return NextResponse.json({ success: false, error: "LinkedIn Server Error" });
+    return NextResponse.json({ success: false, error: "LinkedIn Server Error occurred." });
   }
 }
