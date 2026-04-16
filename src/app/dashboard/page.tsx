@@ -15,69 +15,92 @@ export default function DashboardPage() {
     setStatus(`🚀 Posting to ${platform}...`);
     try {
       const res = await fetch(`/api/post/${platform}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+        method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, mediaUrl }),
       });
       const data = await res.json();
-      if (data.success) setStatus(`✅ Posted to ${platform} Successfully!`);
-      else setStatus(`❌ ${platform} Error: ${data.error}`);
+      if (data.success) setStatus(`✅ Successfully posted to ${platform}!`);
+      else setStatus(`❌ Error: ${data.error}`);
     } catch (err) {
-      setStatus(`❌ ${platform} Connection Error`);
-    } finally {
-      setLoading(false);
-    }
+      setStatus("❌ Connection failed!");
+    } finally { setLoading(false); }
   };
 
   return (
-    <div className="max-w-xl mx-auto p-8 bg-white rounded-3xl shadow-2xl mt-10 border-4 border-blue-500">
-      <h1 className="text-3xl font-black text-blue-600 text-center mb-8 italic uppercase tracking-widest">
-        PostJet V2 PRO
-      </h1>
-      
-      <textarea
-        className="w-full p-5 border-2 border-gray-200 rounded-2xl h-44 outline-none focus:border-blue-500 shadow-inner text-gray-700"
-        placeholder="Write your amazing post here..."
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-      />
+    <div className="min-h-screen bg-gray-50/50 p-4 md:p-10">
+      <div className="max-w-4xl mx-auto bg-white rounded-[2rem] shadow-2xl shadow-blue-100/50 border border-gray-100 overflow-hidden flex flex-col md:flex-row">
+        
+        {/* Left Side: Creation Tools */}
+        <div className="flex-1 p-8 space-y-6">
+          <header className="flex justify-between items-center border-b pb-4">
+            <div>
+              <h1 className="text-2xl font-black text-gray-800 tracking-tight">PostJet <span className="text-blue-600">Pro</span></h1>
+              <p className="text-xs text-gray-400 font-medium uppercase tracking-widest">SaaS Dashboard</p>
+            </div>
+            <div className="w-10 h-10 bg-blue-50 rounded-full flex items-center justify-center text-blue-600 font-bold">Z</div>
+          </header>
 
-      <div className="flex flex-col space-y-4 mt-6">
-        <button 
-          onClick={() => setShowGallery(!showGallery)}
-          className="bg-blue-600 text-white p-4 rounded-2xl text-md font-bold hover:bg-blue-700 shadow-lg"
-        >
-          {showGallery ? "▲ CLOSE GALLERY" : "📷 SELECT FROM GALLERY"}
-        </button>
+          <textarea
+            className="w-full p-6 bg-gray-50 border-none rounded-2xl h-48 focus:ring-2 focus:ring-blue-100 outline-none text-gray-700 placeholder-gray-400 transition-all resize-none"
+            placeholder="Share something amazing with the world..."
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+          />
 
-        {showGallery && (
-          <div className="border-2 border-blue-100 rounded-2xl p-2 bg-gray-50">
-            <MediaGallery 
-              onSelect={(url) => { setMediaUrl(url); setShowGallery(false); }} 
-              selectedUrl={mediaUrl} 
-            />
+          <div className="space-y-3">
+            <button 
+              onClick={() => setShowGallery(!showGallery)}
+              className="w-full flex items-center justify-center space-x-2 bg-white border-2 border-dashed border-gray-200 p-4 rounded-2xl text-gray-500 hover:border-blue-400 hover:text-blue-500 transition-all group"
+            >
+              <span className="text-xl group-hover:scale-110 transition-transform">🖼️</span>
+              <span className="font-semibold">{showGallery ? "Hide Library" : "Open Media Library"}</span>
+            </button>
+
+            {showGallery && (
+              <div className="p-2 bg-gray-50 rounded-2xl animate-in fade-in zoom-in duration-300">
+                <MediaGallery onSelect={(url) => { setMediaUrl(url); setShowGallery(false); }} selectedUrl={mediaUrl} />
+              </div>
+            )}
+
+            {mediaUrl && (
+              <div className="flex items-center space-x-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                <div className="w-10 h-10 rounded bg-white overflow-hidden shadow-sm">
+                  <img src={mediaUrl} className="w-full h-full object-cover" alt="selected" />
+                </div>
+                <p className="text-[10px] text-blue-600 font-mono flex-1 truncate">{mediaUrl}</p>
+                <button onClick={() => setMediaUrl("")} className="text-red-400 hover:text-red-600">✖</button>
+              </div>
+            )}
           </div>
-        )}
-
-        {mediaUrl && (
-          <div className="p-3 bg-green-100 rounded-xl border border-green-300 text-[10px] truncate text-green-800">
-            ✅ Selected: {mediaUrl}
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-2 gap-4 mt-8">
-        <button onClick={() => handlePost("whatsapp")} className="bg-[#25D366] text-white p-4 rounded-xl font-bold shadow-md">WhatsApp</button>
-        <button onClick={() => handlePost("telegram")} className="bg-[#0088cc] text-white p-4 rounded-xl font-bold shadow-md">Telegram</button>
-        <button onClick={() => handlePost("instagram")} className="bg-[#E4405F] text-white p-4 rounded-xl font-bold shadow-md">Instagram</button>
-        <button onClick={() => handlePost("youtube")} className="bg-[#FF0000] text-white p-4 rounded-xl font-bold shadow-md">YouTube</button>
-      </div>
-
-      {status && (
-        <div className={`mt-6 p-4 rounded-xl text-center font-bold ${status.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
-          {status}
         </div>
-      )}
+
+        {/* Right Side: Channels */}
+        <div className="bg-gray-50 w-full md:w-72 p-8 border-l border-gray-100">
+          <h2 className="text-sm font-bold text-gray-500 mb-6 uppercase tracking-wider">Target Channels</h2>
+          <div className="space-y-4">
+            {[
+              { id: "whatsapp", label: "WhatsApp", color: "bg-green-500", shadow: "shadow-green-100" },
+              { id: "telegram", label: "Telegram", color: "bg-sky-500", shadow: "shadow-sky-100" },
+              { id: "instagram", label: "Instagram", color: "bg-pink-500", shadow: "shadow-pink-100" },
+              { id: "youtube", label: "YouTube", color: "bg-red-500", shadow: "shadow-red-100" }
+            ].map((app) => (
+              <button
+                key={app.id}
+                onClick={() => handlePost(app.id)}
+                className={`w-full ${app.color} ${app.shadow} text-white p-4 rounded-2xl font-bold shadow-lg hover:scale-[1.02] active:scale-95 transition-all text-sm`}
+              >
+                Post to {app.label}
+              </button>
+            ))}
+          </div>
+
+          {status && (
+            <div className="mt-8 p-4 bg-white rounded-xl border border-gray-100 text-[11px] font-bold text-center shadow-sm">
+              <span className={status.includes("✅") ? "text-green-500" : "text-red-500"}>{status}</span>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
