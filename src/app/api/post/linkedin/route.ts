@@ -4,40 +4,23 @@ export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
     
-    // వెర్సెల్ నుండి వివరాలు
-    const personIdFromVercel = process.env.LINKEDIN_CLIENT_ID; 
+    const memberId = process.env.LINKEDIN_CLIENT_ID; 
     const accessToken = process.env.LINKEDIN_CLIENT_SECRET;
 
-    if (!accessToken) {
-      return NextResponse.json({ success: false, error: "Token లేదు!" });
+    if (!memberId || !accessToken) {
+      return NextResponse.json({ success: false, error: "Vercel లో ID లేదా Token లేదు!" });
     }
 
-    const token = accessToken.trim();
-    let finalId = personIdFromVercel?.trim();
-
-    // ఒకవేళ వెర్సెల్ లో ఐడీ లేకపోతే, అప్పుడు మాత్రమే వెతకాలి
-    if (!finalId) {
-        const meRes = await fetch("https://api.linkedin.com/v2/me", {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        const meData = await meRes.json();
-        finalId = meData.id;
-    }
-
-    if (!finalId) {
-      return NextResponse.json({ success: false, error: "LinkedIn ID దొరకట్లేదు. Vercel లో మ్యాన్యువల్ గా నెంబర్ ఐడీ ఇవ్వండి." });
-    }
-
-    // లింక్డ్‌ఇన్ కి పంపాల్సిన అసలు URN
-    const authorUrn = `urn:li:person:${finalId}`;
-
+    // ఇక్కడ మార్పు: 'person' బదులు 'member' వాడుతున్నాం
+    const authorUrn = `urn:li:member:${memberId.trim()}`;
+    
     const linkedinUrl = "https://api.linkedin.com/v2/ugcPosts";
     const body: any = {
       author: authorUrn,
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
-          shareCommentary: { text: content || "Shared via PostJet" },
+          shareCommentary: { text: content || "PostJet Professional Post" },
           shareMediaCategory: mediaUrl ? "IMAGE" : "NONE",
         },
       },
@@ -48,9 +31,9 @@ export async function POST(req: Request) {
       body.specificContent["com.linkedin.ugc.ShareContent"].media = [
         {
           status: "READY",
-          description: { text: "PostJet Professional" },
+          description: { text: "Shared via PostJet" },
           media: mediaUrl,
-          title: { text: "Broadcast via PostJet" },
+          title: { text: "PostJet Media" },
         },
       ];
     }
@@ -58,7 +41,7 @@ export async function POST(req: Request) {
     const res = await fetch(linkedinUrl, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${accessToken.trim()}`,
         "Content-Type": "application/json",
         "X-Restli-Protocol-Version": "2.0.0",
       },
@@ -70,7 +53,7 @@ export async function POST(req: Request) {
     if (res.status !== 201) {
       return NextResponse.json({ 
         success: false, 
-        error: `LinkedIn: ${data.message || "Posting failed. Check ID/Token."}` 
+        error: `LinkedIn: ${data.message || "Data Processing Error"}` 
       });
     }
 
