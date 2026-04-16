@@ -9,12 +9,17 @@ export async function POST(req: Request) {
     const recipient = process.env.WHATSAPP_RECIPIENT_ID;
 
     if (!phoneId || !token || !recipient) {
-      return NextResponse.json({ success: false, error: "Environment variables missing!" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Keys Missing!" }, { status: 400 });
     }
 
     const safeContent = content || "";
-    const isVideo = mediaUrl?.toLowerCase().match(/\.(mp4|mov|avi|webm)$/) || mediaUrl?.includes("/video/upload/");
-    const isImage = mediaUrl?.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)$/) || mediaUrl?.includes("/image/upload/");
+    const url = mediaUrl?.toLowerCase() || "";
+
+    // --- Media Detection (Bulletproof Version) ---
+    // లింక్ లో ఎక్కడ 'video' అని ఉన్నా లేదా .mp4 ఉన్నా అది వీడియో కింద లెక్క
+    const isVideo = url.includes(".mp4") || url.includes(".mov") || url.includes("/video/upload");
+    // లింక్ లో ఎక్కడ 'image' అని ఉన్నా లేదా .jpg, .png ఉన్నా అది ఇమేజ్
+    const isImage = url.includes(".jpg") || url.includes(".jpeg") || url.includes(".png") || url.includes(".webp") || url.includes("/image/upload");
 
     let payload: any = {
       messaging_product: "whatsapp",
@@ -22,20 +27,18 @@ export async function POST(req: Request) {
       to: recipient,
     };
 
-    if (mediaUrl && (isImage || isVideo)) {
-      // 🖼️/🎥 మీడియా ఉంటే: వాట్సాప్ రూల్ ప్రకారం క్యాప్షన్ 1024 అక్షరాల లోపే ఉండాలి.
-      const type = isVideo ? "video" : "image";
-      payload.type = type;
-      payload[type] = {
-        link: mediaUrl,
-        caption: safeContent.substring(0, 1020) // ఎర్రర్ రాకుండా 1020 కి కట్ చేస్తున్నాం.
-      };
+    if (mediaUrl && isVideo) {
+      payload.type = "video";
+      payload.video = { link: mediaUrl, caption: safeContent.substring(0, 1000) };
+    } else if (mediaUrl && isImage) {
+      payload.type = "image";
+      payload.image = { link: mediaUrl, caption: safeContent.substring(0, 1000) };
     } else {
-      // 📝 కేవలం టెక్స్ట్ ఉంటే: వాట్సాప్ రూల్ ప్రకారం బాడీ 4096 అక్షరాల లోపే ఉండాలి.
+      // ఏమీ లేకపోతే కేవలం టెక్స్ట్
       payload.type = "text";
-      payload.text = {
-        preview_url: true,
-        body: (safeContent + (mediaUrl ? `\n\nLink: ${mediaUrl}` : "")).substring(0, 4090)
+      payload.text = { 
+        preview_url: true, 
+        body: (safeContent + (mediaUrl ? `\n\n${mediaUrl}` : "")).substring(0, 4000) 
       };
     }
 
@@ -51,12 +54,13 @@ export async function POST(req: Request) {
     const data = await res.json();
 
     if (data.error) {
+      // కేవలం మెయిన్ ఎర్రర్ మాత్రమే చూపిస్తున్నాం, పెద్ద కోడ్ రాదు
       return NextResponse.json({ success: false, error: data.error.message }, { status: 400 });
     }
 
-    return NextResponse.json({ success: true, messageId: data.messages[0].id });
+    return NextResponse.json({ success: true });
 
   } catch (error: any) {
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: "Server Error" }, { status: 500 });
   }
 }
