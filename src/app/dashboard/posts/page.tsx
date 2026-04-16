@@ -7,7 +7,7 @@ export default function CreatePost() {
   const [mediaUrl, setMediaUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [showGallery, setShowGallery] = useState(false); // గ్యాలరీ చూపించడానికి
+  const [showGallery, setShowGallery] = useState(false); // గ్యాలరీని దాచడానికి/చూపించడానికి
 
   const handlePost = async (platform: string) => {
     if (!content && !mediaUrl) return alert("Please add content or select media!");
@@ -15,7 +15,6 @@ export default function CreatePost() {
     setStatus(`🚀 Posting to ${platform}...`);
 
     try {
-      // ప్లాట్‌ఫామ్ బట్టి API మారుతుంది (whatsapp, telegram, instagram, etc.)
       const res = await fetch(`/api/post/${platform}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -35,76 +34,81 @@ export default function CreatePost() {
   };
 
   return (
-    <div className="max-w-xl mx-auto p-6 bg-white rounded-2xl shadow-2xl mt-10 border border-gray-100">
+    <div className="max-w-xl mx-auto p-6 bg-white rounded-2xl shadow-xl mt-10 border border-gray-100">
       <h1 className="text-2xl font-bold text-gray-800 text-center mb-6">PostJet Multi-Poster</h1>
       
+      {/* టెక్స్ట్ ఏరియా */}
       <textarea
-        className="w-full p-4 border-2 border-gray-100 rounded-xl h-40 outline-none focus:border-blue-500 transition-all resize-none shadow-sm"
+        className="w-full p-4 border-2 border-gray-100 rounded-xl h-40 outline-none focus:border-blue-500 transition-all resize-none shadow-sm text-gray-700"
         placeholder="మీ మెసేజ్ ఇక్కడ టైప్ చేయండి..."
         value={content}
         onChange={(e) => setContent(e.target.value)}
       />
 
       <div className="flex flex-col space-y-3 mt-4">
-        {/* గ్యాలరీ బటన్ */}
+        {/* గ్యాలరీని ఓపెన్/క్లోజ్ చేసే బటన్ */}
         <button 
           onClick={() => setShowGallery(!showGallery)}
-          className="bg-gray-100 text-gray-700 p-2 rounded-lg text-sm font-medium hover:bg-gray-200"
+          className="bg-blue-50 text-blue-600 p-3 rounded-xl text-sm font-bold hover:bg-blue-100 transition-colors border border-blue-200"
         >
-          {showGallery ? "▲ Close Gallery" : "📷 Select Media (Image/Video)"}
+          {showGallery ? "▲ Close Media Gallery" : "📷 Select Media (Image/Video)"}
         </button>
 
+        {/* గ్యాలరీ కాంపోనెంట్ - కేవలం బటన్ నొక్కినప్పుడే కనిపిస్తుంది */}
         {showGallery && (
-          <MediaGallery 
-            onSelect={(url) => { setMediaUrl(url); setShowGallery(false); }} 
-            selectedUrl={mediaUrl} 
-          />
+          <div className="animate-in fade-in slide-in-from-top-2 duration-300">
+            <MediaGallery 
+              onSelect={(url) => { setMediaUrl(url); setShowGallery(false); }} 
+              selectedUrl={mediaUrl} 
+            />
+          </div>
         )}
 
+        {/* సెలెక్ట్ అయిన మీడియా ప్రివ్యూ సూచన */}
         {mediaUrl && (
-          <div className="flex items-center space-x-2 p-2 bg-green-50 rounded-lg">
-            <span className="text-green-600 text-xs">✔ Media Selected</span>
-            <button onClick={() => setMediaUrl("")} className="text-red-500 text-xs underline">Remove</button>
+          <div className="flex items-center justify-between p-3 bg-green-50 rounded-xl border border-green-200">
+            <span className="text-green-700 text-xs font-medium truncate max-w-[80%]">
+              ✔ Media Ready: {mediaUrl.split('/').pop()}
+            </span>
+            <button onClick={() => setMediaUrl("")} className="text-red-500 text-xs font-bold hover:underline">Remove</button>
           </div>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mt-6">
-        {/* వాట్సాప్ బటన్ */}
+      {/* మల్టీ-ప్లాట్‌ఫామ్ బటన్స్ */}
+      <div className="grid grid-cols-2 gap-4 mt-8">
         <button
           onClick={() => handlePost("whatsapp")}
-          className="bg-green-600 text-white p-3 rounded-xl font-bold hover:bg-green-700 shadow-lg shadow-green-200"
+          className="bg-[#25D366] text-white p-4 rounded-xl font-bold hover:opacity-90 shadow-md transition-all active:scale-95"
         >
           WhatsApp
         </button>
 
-        {/* టెలిగ్రామ్ బటన్ */}
         <button
           onClick={() => handlePost("telegram")}
-          className="bg-blue-500 text-white p-3 rounded-xl font-bold hover:bg-blue-600 shadow-lg shadow-blue-200"
+          className="bg-[#0088cc] text-white p-4 rounded-xl font-bold hover:opacity-90 shadow-md transition-all active:scale-95"
         >
           Telegram
         </button>
 
-        {/* ఇన్‌స్టాగ్రామ్ బటన్ */}
         <button
           onClick={() => handlePost("instagram")}
-          className="bg-pink-600 text-white p-3 rounded-xl font-bold hover:bg-pink-700 shadow-lg shadow-pink-200"
+          className="bg-gradient-to-tr from-[#f9ce34] via-[#ee2a7b] to-[#6228d7] text-white p-4 rounded-xl font-bold hover:opacity-90 shadow-md transition-all active:scale-95"
         >
           Instagram
         </button>
 
-        {/* యూట్యూబ్ షార్ట్స్ కోసం */}
         <button
           onClick={() => handlePost("youtube")}
-          className="bg-red-600 text-white p-3 rounded-xl font-bold hover:bg-red-700 shadow-lg shadow-red-200"
+          className="bg-[#FF0000] text-white p-4 rounded-xl font-bold hover:opacity-90 shadow-md transition-all active:scale-95"
         >
           YouTube
         </button>
       </div>
 
+      {/* స్టేటస్ మెసేజ్ */}
       {status && (
-        <div className={`mt-6 p-3 rounded-lg text-center font-semibold text-sm ${status.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+        <div className={`mt-6 p-4 rounded-xl text-center font-bold text-sm animate-bounce ${status.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
           {status}
         </div>
       )}
