@@ -8,43 +8,60 @@ export async function POST(req: Request) {
     const token = process.env.WHATSAPP_TOKEN;
     const recipient = process.env.WHATSAPP_RECIPIENT_ID;
 
-    // 1. Keys ఉన్నాయో లేదో స్ట్రిక్ట్ చెక్
     if (!phoneId || !token || !recipient) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Vercel Environment Variables (PhoneID/Token/Recipient) missing!" 
-      }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Vercel Variables Missing" }, { status: 400 });
     }
 
-    console.log(`🚀 Sending Template Message to: ${recipient}`);
+    // --- Media Type Detection (Improved) ---
+    // Cloudinary లింక్స్ లో ఒక్కోసారి చివర ఎక్స్‌టెన్షన్ ఉండదు, అందుకే "image/upload" లేదా "video/upload" ఉన్నాయో లేదో చూస్తున్నాం.
+    const isVideo = mediaUrl?.toLowerCase().match(/\.(mp4|mov|avi|webm)$/) || mediaUrl?.includes("/video/upload/");
+    const isImage = mediaUrl?.toLowerCase().match(/\.(jpg|jpeg|png|webp|gif)$/) || mediaUrl?.includes("/image/upload/");
 
-    // 2. Meta API Call - Using 'hello_world' template for 100% delivery
-    const res = await fetch(`https://graph.facebook.com/v20.0/${phoneId}/messages`, {
+    let payload: any = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual",
+      to: recipient,
+    };
+
+    if (mediaUrl && isVideo) {
+      // 🎥 వీడియో లాజిక్
+      payload.type = "video";
+      payload.video = {
+        link: mediaUrl,
+        caption: content || ""
+      };
+    } else if (mediaUrl && isImage) {
+      // 🖼️ ఇమేజ్ లాజిక్
+      payload.type = "image";
+      payload.image = {
+        link: mediaUrl,
+        caption: content || ""
+      };
+    } else {
+      // 📝 కేవలం టెక్స్ట్ లాజిక్
+      payload.type = "text";
+      payload.text = {
+        preview_url: true,
+        body: content ? `${content}${mediaUrl ? `\n\nLink: ${mediaUrl}` : ""}` : (mediaUrl || "")
+      };
+    }
+
+    console.log(`🚀 Final Payload being sent to WhatsApp:`, JSON.stringify(payload));
+
+    const res = await fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
       method: "POST",
       headers: { 
         Authorization: `Bearer ${token}`, 
         "Content-Type": "application/json" 
       },
-      body: JSON.stringify({
-        messaging_product: "whatsapp",
-        to: recipient,
-        type: "template",
-        template: {
-          name: "hello_world",
-          language: { code: "en_US" }
-        }
-      })
+      body: JSON.stringify(payload)
     });
 
     const data = await res.json();
 
-    // 3. ఒకవేళ Meta ఎర్రర్ పంపితే (Like: Token expired or Number not whitelisted)
     if (data.error) {
-      console.error("❌ Meta Error Details:", data.error);
-      return NextResponse.json({ 
-        success: false, 
-        error: `Meta Error: ${data.error.message} (Code: ${data.error.code})` 
-      }, { status: 400 });
+      console.error("❌ Meta API Error:", data.error);
+      return NextResponse.json({ success: false, error: data.error.message }, { status: 400 });
     }
 
     return NextResponse.json({ success: true, messageId: data.messages[0].id });
