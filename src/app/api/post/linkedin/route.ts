@@ -3,31 +3,25 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
-    const accessToken = process.env.LINKEDIN_CLIENT_SECRET; // నీ Access Token
-
-    if (!accessToken) {
-      return NextResponse.json({ success: false, error: "Vercel లో Token లేదు!" });
-    }
-
-    // --- STEP 1: నీ మెంబర్ ID ని ఆటోమేటిక్ గా కనుక్కోవడం ---
-    const meRes = await fetch("https://api.linkedin.com/v2/me", {
-      headers: { Authorization: `Bearer ${accessToken.trim()}` },
-    });
-    const meData = await meRes.json();
     
-    if (!meData.id) {
-      return NextResponse.json({ success: false, error: "LinkedIn ID ని పట్టుకోలేకపోయాము. టోకెన్ చెక్ చెయ్యి." });
+    // వెర్సెల్ లో నువ్వు ఇచ్చిన ఐడీ మరియు టోకెన్
+    const personId = process.env.LINKEDIN_CLIENT_ID; 
+    const accessToken = process.env.LINKEDIN_CLIENT_SECRET;
+
+    if (!personId || !accessToken) {
+      return NextResponse.json({ 
+        success: false, 
+        error: "Vercel లో LINKEDIN_CLIENT_ID లేదా SECRET(Token) దొరకలేదు!" 
+      });
     }
 
-    // ఇక్కడ మార్పు చేశాను: 'person' బదులు 'member' వాడుతున్నాం
-    const myMemberUrn = `urn:li:member:${meData.id}`;
-    console.log("Using LinkedIn Member URN:", myMemberUrn);
-
-    // --- STEP 2: పోస్ట్ చేయడం ---
+    // పోయినసారి ఎర్రర్ ప్రకారం 'person' బదులు 'member' వాడుతున్నాం
+    const myMemberUrn = `urn:li:member:${personId.trim()}`;
+    
     const linkedinUrl = "https://api.linkedin.com/v2/ugcPosts";
 
     const body: any = {
-      author: myMemberUrn, // ఇక్కడ మెంబర్ URN వాడుతున్నాం
+      author: myMemberUrn,
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
@@ -62,10 +56,10 @@ export async function POST(req: Request) {
     const data = await res.json();
 
     if (res.status !== 201) {
-      // లింక్డ్‌ఇన్ ఇచ్చే ఎర్రర్ ని క్లియర్ గా చూపిస్తున్నాను
+      // లింక్డ్‌ఇన్ ఇచ్చే అసలు ఎర్రర్ ని ఇక్కడ పట్టుకుంటున్నాం
       return NextResponse.json({ 
         success: false, 
-        error: `LinkedIn: ${data.message || "Posting failed"}` 
+        error: `LinkedIn: ${data.message || "Invalid Token or Scope"}` 
       });
     }
 
