@@ -9,7 +9,9 @@ const authOptions: NextAuthOptions = {
     FacebookProvider({
       clientId: process.env.FACEBOOK_CLIENT_ID!,
       clientSecret: process.env.FACEBOOK_CLIENT_SECRET!,
-      authorization: { params: { scope: "email,public_profile,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish" } },
+      authorization: {
+        params: { scope: "email,public_profile,pages_manage_posts,pages_read_engagement,instagram_basic,instagram_content_publish" },
+      },
     }),
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
@@ -27,15 +29,21 @@ const authOptions: NextAuthOptions = {
         return { id: profile.sub, name: profile.name, email: profile.email, image: profile.picture };
       },
     }),
+    // 🔥 Pinterest - Updated with explicit Token Method
     PinterestProvider({
       clientId: process.env.PINTEREST_CLIENT_ID!,
       clientSecret: process.env.PINTEREST_CLIENT_SECRET!,
-      authorization: { params: { scope: "pins:read,pins:write,boards:read" } },
+      authorization: {
+        params: { scope: "boards:read,pins:read,pins:write" },
+      },
+      client: {
+        token_endpoint_auth_method: "client_secret_post",
+      },
     }),
   ],
   callbacks: {
     async jwt({ token, account }) {
-      if (account) token.accessToken = account.access_token;
+      if (account) { token.accessToken = account.access_token; }
       return token;
     },
     async session({ session, token }: any) {
@@ -44,7 +52,7 @@ const authOptions: NextAuthOptions = {
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true,
+  debug: true, 
 };
 
 const handler = NextAuth(authOptions);
