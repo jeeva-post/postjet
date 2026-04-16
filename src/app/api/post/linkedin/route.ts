@@ -9,7 +9,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "Vercel లో Token లేదు!" });
     }
 
-    // --- STEP 1: నీ అసలు LinkedIn ID ని ఆటోమేటిక్ గా కనుక్కోవడం ---
+    // --- STEP 1: నీ మెంబర్ ID ని ఆటోమేటిక్ గా కనుక్కోవడం ---
     const meRes = await fetch("https://api.linkedin.com/v2/me", {
       headers: { Authorization: `Bearer ${accessToken.trim()}` },
     });
@@ -19,18 +19,19 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: false, error: "LinkedIn ID ని పట్టుకోలేకపోయాము. టోకెన్ చెక్ చెయ్యి." });
     }
 
-    const myPersonUrn = `urn:li:person:${meData.id}`;
-    console.log("Found LinkedIn ID:", myPersonUrn);
+    // ఇక్కడ మార్పు చేశాను: 'person' బదులు 'member' వాడుతున్నాం
+    const myMemberUrn = `urn:li:member:${meData.id}`;
+    console.log("Using LinkedIn Member URN:", myMemberUrn);
 
     // --- STEP 2: పోస్ట్ చేయడం ---
     const linkedinUrl = "https://api.linkedin.com/v2/ugcPosts";
 
     const body: any = {
-      author: myPersonUrn,
+      author: myMemberUrn, // ఇక్కడ మెంబర్ URN వాడుతున్నాం
       lifecycleState: "PUBLISHED",
       specificContent: {
         "com.linkedin.ugc.ShareContent": {
-          shareCommentary: { text: content || "PostJet Professional Broadcast" },
+          shareCommentary: { text: content || "Shared via PostJet" },
           shareMediaCategory: mediaUrl ? "IMAGE" : "NONE",
         },
       },
@@ -41,7 +42,7 @@ export async function POST(req: Request) {
       body.specificContent["com.linkedin.ugc.ShareContent"].media = [
         {
           status: "READY",
-          description: { text: "Professional Post" },
+          description: { text: "PostJet Professional Content" },
           media: mediaUrl,
           title: { text: "Shared via PostJet" },
         },
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
     const data = await res.json();
 
     if (res.status !== 201) {
+      // లింక్డ్‌ఇన్ ఇచ్చే ఎర్రర్ ని క్లియర్ గా చూపిస్తున్నాను
       return NextResponse.json({ 
         success: false, 
         error: `LinkedIn: ${data.message || "Posting failed"}` 
