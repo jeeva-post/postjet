@@ -11,34 +11,24 @@ export async function POST(req: Request) {
 
     const token = accessToken.trim();
 
-    // --- STEP 1: నీ ID ని కనుక్కోవడం (UserInfo API) ---
-    // ఇది కొత్త అకౌంట్లకి పక్కాగా పనిచేసే పద్ధతి
+    // --- STEP 1: నీ అసలు 'Numeric' ID ని కనుక్కోవడం ---
     const userinfoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
       headers: { Authorization: `Bearer ${token}` },
     });
     const userInfo = await userinfoRes.json();
     
-    // ఒకవేళ పైన రాకపోతే పాత పద్ధతిలో ట్రై చేస్తుంది
     let linkedinId = userInfo.sub; 
-    if (!linkedinId) {
-        const meRes = await fetch("https://api.linkedin.com/v2/me", {
-            headers: { Authorization: `Bearer ${token}` },
-        });
-        const meData = await meRes.json();
-        linkedinId = meData.id;
-    }
 
     if (!linkedinId) {
-      return NextResponse.json({ success: false, error: "LinkedIn ID దొరకలేదు. Token పర్మిషన్స్ చెక్ చెయ్యి." });
+      return NextResponse.json({ success: false, error: "LinkedIn ID ని పట్టుకోలేకపోయాము. టోకెన్ పర్మిషన్స్ చెక్ చెయ్యి." });
     }
 
     // --- STEP 2: కొత్త API ద్వారా పోస్ట్ చేయడం ---
-    // ఇది పాత 'ugcPosts' కంటే చాలా అడ్వాన్స్‌డ్
     const postUrl = "https://api.linkedin.com/rest/posts";
 
     const body: any = {
       author: `urn:li:person:${linkedinId}`,
-      commentary: content || "Broadcast via PostJet",
+      commentary: content || "PostJet Professional Broadcast",
       visibility: "PUBLIC",
       distribution: {
         feedDistribution: "MAIN_FEED",
@@ -49,13 +39,13 @@ export async function POST(req: Request) {
       isReshareDisabledByAuthor: false
     };
 
-    // ఒకవేళ ఇమేజ్ ఉంటే జత చేయడం
+    // ఇమేజ్ ఉన్నా లేకపోయినా క్రాష్ అవ్వకుండా సెట్ చేస్తున్నాను
     if (mediaUrl) {
       body.content = {
         article: {
           source: mediaUrl,
-          title: "PostJet Professional Feed",
-          description: "Media shared via PostJet SaaS"
+          title: "Shared via PostJet Pro",
+          description: "Professional content delivery"
         }
       };
     }
@@ -65,7 +55,7 @@ export async function POST(req: Request) {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "LinkedIn-Version": "202401", // కొత్త వెర్షన్ హెడర్
+        "LinkedIn-Version": "202402", // ఇక్కడ వెర్షన్ మార్చాను
         "X-Restli-Protocol-Version": "2.0.0",
       },
       body: JSON.stringify(body),
@@ -76,9 +66,11 @@ export async function POST(req: Request) {
     } else {
       const errorData = await res.json();
       console.error("LinkedIn API Error:", errorData);
+      
+      // ఒకవేళ మళ్ళీ వెర్షన్ ఎర్రర్ వస్తే అది ఇక్కడ కనిపిస్తుంది
       return NextResponse.json({ 
         success: false, 
-        error: `LinkedIn: ${errorData.message || "Posting failed"}` 
+        error: `LinkedIn: ${errorData.message || "Version or Auth Error"}` 
       });
     }
   } catch (err: any) {
