@@ -6,71 +6,70 @@ export async function POST(req: Request) {
     const accessToken = process.env.LINKEDIN_CLIENT_SECRET;
 
     if (!accessToken) {
-      return NextResponse.json({ success: false, error: "Vercel లో Token లేదు!" });
+      return NextResponse.json({ success: false, error: "Token missing in Vercel!" });
     }
 
     const token = accessToken.trim();
 
-    // --- STEP 1: నీ అసలు 'Numeric' ID ని కనుక్కోవడం ---
-    const userinfoRes = await fetch("https://api.linkedin.com/v2/userinfo", {
+    // 1. నీ ఐడీని పక్కాగా కనుక్కోవడం (Versionless call)
+    const meRes = await fetch("https://api.linkedin.com/v2/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
-    const userInfo = await userinfoRes.json();
+    const meData = await meRes.json();
     
-    let linkedinId = userInfo.sub; 
-
-    if (!linkedinId) {
-      return NextResponse.json({ success: false, error: "LinkedIn ID ని పట్టుకోలేకపోయాము. టోకెన్ పర్మిషన్స్ చెక్ చెయ్యి." });
+    if (!meData.id) {
+      return NextResponse.json({ success: false, error: "లింక్డ్‌ఇన్ నుండి మీ ఐడీ దొరకలేదు. టోకెన్ పర్మిషన్ సరిగ్గా లేదు." });
     }
 
-    // --- STEP 2: కొత్త API ద్వారా పోస్ట్ చేయడం ---
-    const postUrl = "https://api.linkedin.com/rest/posts";
+    const personUrn = `urn:li:person:${meData.id}`;
+
+    // 2. పాత స్థిరమైన V2 API ని వాడటం
+    const ugcUrl = "https://api.linkedin.com/v2/ugcPosts";
 
     const body: any = {
-      author: `urn:li:person:${linkedinId}`,
-      commentary: content || "PostJet Professional Broadcast",
-      visibility: "PUBLIC",
-      distribution: {
-        feedDistribution: "MAIN_FEED",
-        targetEntities: [],
-        thirdPartyDistributionChannels: []
-      },
+      author: personUrn,
       lifecycleState: "PUBLISHED",
-      isReshareDisabledByAuthor: false
+      specificContent: {
+        "com.linkedin.ugc.ShareContent": {
+          shareCommentary: { text: content || "PostJet Broadcast" },
+          shareMediaCategory: mediaUrl ? "IMAGE" : "NONE",
+        },
+      },
+      visibility: { "com.linkedin.ugc.MemberNetworkVisibility": "PUBLIC" },
     };
 
-    // ఇమేజ్ ఉన్నా లేకపోయినా క్రాష్ అవ్వకుండా సెట్ చేస్తున్నాను
+    // ఇమేజ్ ఉన్నప్పుడు మాత్రమే మీడియా జత చేయడం
     if (mediaUrl) {
-      body.content = {
-        article: {
-          source: mediaUrl,
-          title: "Shared via PostJet Pro",
-          description: "Professional content delivery"
-        }
-      };
+      body.specificContent["com.linkedin.ugc.ShareContent"].media = [
+        {
+          status: "READY",
+          description: { text: "Shared via PostJet" },
+          media: mediaUrl,
+          title: { text: "Media Content" },
+        },
+      ];
     }
 
-    const res = await fetch(postUrl, {
+    const res = await fetch(ugcUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
-        "LinkedIn-Version": "202402", // ఇక్కడ వెర్షన్ మార్చాను
         "X-Restli-Protocol-Version": "2.0.0",
       },
       body: JSON.stringify(body),
     });
 
+    const data = await res.json();
+
     if (res.status === 201 || res.status === 200) {
       return NextResponse.json({ success: true });
     } else {
-      const errorData = await res.json();
-      console.error("LinkedIn API Error:", errorData);
-      
-      // ఒకవేళ మళ్ళీ వెర్షన్ ఎర్రర్ వస్తే అది ఇక్కడ కనిపిస్తుంది
+      // లింక్డ్‌ఇన్ ఇచ్చే అసలు ఎర్రర్ ని ఇక్కడ పట్టుకుందాం
+      console.error("LinkedIn Detailed Error:", data);
       return NextResponse.json({ 
         success: false, 
-        error: `LinkedIn: ${errorData.message || "Version or Auth Error"}` 
+        error: `LinkedIn: ${data.message || "Posting failed"}` 
       });
     }
   } catch (err: any) {
