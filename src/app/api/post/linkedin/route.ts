@@ -5,12 +5,26 @@ export async function POST(req: Request) {
     const { content, mediaUrl } = await req.json();
     const token = process.env.LINKEDIN_CLIENT_SECRET;
 
-    // మెంబర్ ఐడీని కనుక్కోవడం
+    // 1. మెంబర్ ఐడీని కనుక్కోవడం (Debug Mode)
     const meRes = await fetch("https://api.linkedin.com/v2/me", {
       headers: { Authorization: `Bearer ${token}` },
     });
+    
     const meData = await meRes.json();
 
+    // ఒకవేళ ఐడీ దొరకకపోతే ఇక్కడే ఆగిపోయి ఎర్రర్ చూపిస్తుంది
+    if (!meRes.ok) {
+      console.log("LinkedIn API Error Details:", meData); // ఇది టెర్మినల్‌లో కనిపిస్తుంది
+      return NextResponse.json({ 
+        success: false, 
+        error: `LinkedIn Error: ${meData.message || 'టోకెన్ పర్మిషన్ సరిగ్గా లేదు (Scope Issue)'}`,
+        debug: meData 
+      });
+    }
+
+    const memberId = meData.id;
+
+    // 2. పోస్ట్ చేయడం
     const res = await fetch("https://api.linkedin.com/v2/ugcPosts", {
       method: "POST",
       headers: {
@@ -19,7 +33,7 @@ export async function POST(req: Request) {
         "X-Restli-Protocol-Version": "2.0.0",
       },
       body: JSON.stringify({
-        author: `urn:li:person:${meData.id}`,
+        author: `urn:li:person:${memberId}`,
         lifecycleState: "PUBLISHED",
         specificContent: {
           "com.linkedin.ugc.ShareContent": {
@@ -32,6 +46,13 @@ export async function POST(req: Request) {
       }),
     });
 
-    return res.status === 201 ? NextResponse.json({ success: true }) : NextResponse.json({ success: false });
-  } catch (e: any) { return NextResponse.json({ success: false, error: e.message }); }
+    const postData = await res.json();
+
+    return res.status === 201 
+      ? NextResponse.json({ success: true }) 
+      : NextResponse.json({ success: false, error: "Post failed", details: postData });
+
+  } catch (e: any) { 
+    return NextResponse.json({ success: false, error: e.message }); 
+  }
 }
