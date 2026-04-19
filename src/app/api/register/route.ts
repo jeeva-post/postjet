@@ -1,65 +1,46 @@
-export const dynamic = 'force-dynamic';
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
+import { PrismaClient } from "@prisma/client"; // లేదా నువ్వు వాడుతున్న DB క్లయింట్
 import bcrypt from "bcryptjs";
 
-// ఈ లైన్ వెర్సెల్ బిల్డ్ ఎర్రర్స్ (Missing Environment Variables) రాకుండా కాపాడుతుంది
-export const dynamic = "force-dynamic";
+// బిల్డ్ ఎర్రర్ రాకుండా ఉండటానికి ఇది కచ్చితంగా ఉండాలి
+export const dynamic = 'force-dynamic';
+
+const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    const { name, email, mobile, password } = body;
+    const { email, password, name } = await req.json();
 
-    // 1. డేటా సరిగ్గా ఉందో లేదో చెక్ చేయడం
-    if (!name || !email || !mobile || !password) {
-      return NextResponse.json(
-        { error: "అన్ని వివరాలు (Name, Email, Mobile, Password) ఇవ్వాలి." },
-        { status: 400 }
-      );
+    // 1. అన్నీ వివరాలు వచ్చాయో లేదో చెక్ చేయడం
+    if (!email || !password) {
+      return NextResponse.json({ success: false, error: "Email and Password are required" }, { status: 400 });
     }
 
-    // 2. MongoDB కనెక్ట్ అవ్వడం
-    const client = await clientPromise;
-    const db = client.db();
-
-    // 3. యూజర్ ముందే ఉన్నారో లేదో చూడటం
-    const existingUser = await db.collection("users").findOne({
-      $or: [
-        { email: email.toLowerCase() },
-        { mobile: mobile }
-      ]
+    // 2. యూజర్ ఆల్రెడీ ఉన్నాడేమో చూడటం
+    const existingUser = await prisma.user.findUnique({
+      where: { email }
     });
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: "ఈ ఇమెయిల్ లేదా మొబైల్ నంబర్ తో ఇప్పటికే ఒక యూజర్ ఉన్నారు." },
-        { status: 400 }
-      );
+      return NextResponse.json({ success: false, error: "యూజర్ ఆల్రెడీ ఉన్నాడు!" }, { status: 400 });
     }
 
-    // 4. పాస్‌వర్డ్ ని హ్యాష్ చేయడం
+    // 3. పాస్‌వర్డ్ ని హాష్ (Encrypt) చేయడం
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 5. కొత్త యూజర్‌ని సేవ్ చేయడం
-    const result = await db.collection("users").insertOne({
-      name,
-      email: email.toLowerCase(),
-      mobile,
-      password: hashedPassword,
-      createdAt: new Date(),
+    // 4. కొత్త యూజర్ ని క్రియేట్ చేయడం
+    const user = await prisma.user.create({
+      data: {
+        email,
+        name,
+        password: hashedPassword,
+      },
     });
 
-    return NextResponse.json(
-      { message: "User registered successfully!", userId: result.insertedId },
-      { status: 201 }
-    );
+    return NextResponse.json({ success: true, message: "Registration successful!", userId: user.id });
 
-  } catch (error: any) {
-    console.error("Registration Error:", error);
-    return NextResponse.json(
-      { error: "సర్వర్ లో ఏదో సమస్య ఉంది, మళ్ళీ ప్రయత్నించండి." },
-      { status: 500 }
-    );
+  } catch (err: any) {
+    console.error("Registration Error:", err.message);
+    return NextResponse.json({ success: false, error: "రిజిస్ట్రేషన్ ఫెయిల్ అయ్యింది", details: err.message }, { status: 500 });
   }
 }
