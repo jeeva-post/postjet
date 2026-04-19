@@ -6,61 +6,70 @@ export async function POST(req: Request) {
     const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
     const igId = process.env.INSTAGRAM_BUSINESS_ID;
 
-    // 1. ప్రాథమిక తనిఖీ (Basic Checks)
-    if (!accessToken || !igId) {
-      return NextResponse.json({ success: false, error: "Environment variables (Token/ID) missing!" });
+    if (!accessToken || !igId || !mediaUrl) {
+      return NextResponse.json({ success: false, error: "Missing API Configuration (Token/ID)" });
     }
 
-    if (!mediaUrl) {
-      return NextResponse.json({ success: false, error: "ఇన్‌స్టాగ్రామ్ కి ఇమేజ్ లేదా వీడియో లింక్ కచ్చితంగా ఉండాలి." });
+    // --- SaaS Feature: Automatic Format Conversion (Cloudinary) ---
+    let finalMediaUrl = mediaUrl;
+    if (mediaUrl.includes("cloudinary.com")) {
+      // యూజర్ ఏ ఫార్మాట్ ఇచ్చినా (.avi, .mkv, .mov), దాన్ని .mp4 గా క్లౌడినరీ మారుస్తుంది
+      finalMediaUrl = mediaUrl.replace(/\.[^/.]+$/, "") + ".mp4";
     }
 
-    console.log("Instagram Posting Started...");
+    const isVideo = fileType === "VIDEO" || finalMediaUrl.toLowerCase().endsWith(".mp4");
 
-    // 2. మీడియా టైప్ నిర్ణయించడం (Image vs Video)
-    const isVideo = fileType === "VIDEO" || mediaUrl.toLowerCase().endsWith(".mp4") || mediaUrl.toLowerCase().endsWith(".mov");
-    
-    // STEP 1: కంటైనర్ క్రియేట్ చేయడం
+    // STEP 1: Create Media Container
     let containerUrl = `https://graph.facebook.com/v19.0/${igId}/media?caption=${encodeURIComponent(content)}&access_token=${accessToken}`;
     
     if (isVideo) {
-      containerUrl += `&media_type=VIDEO&video_url=${encodeURIComponent(mediaUrl)}`;
+      containerUrl += `&media_type=VIDEO&video_url=${encodeURIComponent(finalMediaUrl)}`;
     } else {
-      containerUrl += `&image_url=${encodeURIComponent(mediaUrl)}`;
+      containerUrl += `&image_url=${encodeURIComponent(finalMediaUrl)}`;
     }
 
     const containerRes = await fetch(containerUrl, { method: "POST" });
     const containerData = await containerRes.json();
 
     if (!containerData.id) {
-      return NextResponse.json({ 
-        success: false, 
-        error: "Media Container సృష్టించడం విఫలమైంది. లింక్ పబ్లిక్ గా ఉందో లేదో చూడండి.", 
-        debug: containerData 
-      });
+      return NextResponse.json({ success: false, error: "Container Creation Failed", debug: containerData });
     }
 
     const creationId = containerData.id;
 
-    // STEP 2: వీడియో అయితే ప్రాసెసింగ్ కోసం ఆగడం (చాలా ముఖ్యం)
+    // STEP 2: Polling for Video Status (వీడియో ప్రాసెస్ అయ్యేదాకా ఆగడం)
     if (isVideo) {
-      console.log("Video processing... waiting 10 seconds.");
-      await new Promise((resolve) => setTimeout(resolve, 10000)); 
+      let status = "IN_PROGRESS";
+      let attempts = 0;
+      // గరిష్టంగా 15 సార్లు (75 సెకన్లు) చెక్ చేస్తుంది
+      while (status !== "FINISHED" && attempts < 15) {
+        await new Promise(resolve => setTimeout(resolve, 5000)); // 5 సెకన్ల విరామం
+        const statusRes = await fetch(`https://graph.facebook.com/v19.0/${creationId}?fields=status_code&access_token=${accessToken}`);
+        const statusData = await statusRes.json();
+        status = statusData.status_code;
+
+        if (status === "ERROR") {
+          return NextResponse.json({ success: false, error: "Instagram failed to process this video format." });
+        }
+        attempts++;
+      }
+      
+      if (status !== "FINISHED") {
+        return NextResponse.json({ success: false, error: "Video processing took too long. Please try a smaller file." });
+      }
     }
 
-    // STEP 3: మీడియా పబ్లిష్ చేయడం
-    const publishUrl = `https://graph.facebook.com/v19.0/${igId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`;
-    const publishRes = await fetch(publishUrl, { method: "POST" });
+    // STEP 3: Final Publish
+    const publishRes = await fetch(
+      `https://graph.facebook.com/v19.0/${igId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`,
+      { method: "POST" }
+    );
     const publishData = await publishRes.json();
 
     if (publishData.id) {
-      return NextResponse.json({ success: true, postId: publishData.id, message: "Instagram Post Success! 🚀" });
+      return NextResponse.json({ success: true, message: "Instagram Post Success! 🚀", postId: publishData.id });
     } else {
-      return NextResponse.json({ 
-        success: false, 
-        error: "పబ్లిష్ చేయడం విఫలమైంది. వీడియో ఇంకా ప్రాసెస్ అవుతూ ఉండొచ్చు.", 
-        debug: publishData 
-      });
+      return NextResponse.json({ success: false, error: "Publishing Failed", debug: publishData });
     }
 
   } catch (err: any) {
