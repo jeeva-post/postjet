@@ -3,55 +3,64 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
-    const accessToken = process.env.FB_ACCESS_TOKEN;
-    const pageId = process.env.FB_PAGE_ID;
+    
+    // Environment Variables తీసుకోవడం
+    const accessToken = process.env.FACEBOOK_ACCESS_TOKEN;
+    const igId = process.env.INSTAGRAM_BUSINESS_ID;
 
-    console.log("Using Page ID:", pageId);
-
-    // 1. Instagram Business ID ని వెతకడం
-    const igAccountRes = await fetch(
-      `https://graph.facebook.com/v19.0/${pageId}?fields=instagram_business_account,name&access_token=${accessToken}`
-    );
-    const igAccountData = await igAccountRes.json();
-
-    // టెర్మినల్‌లో చెక్ చేయడం కోసం
-    console.log("Facebook API Response:", igAccountData);
-
-    if (!igAccountData.instagram_business_account) {
+    // 1. సెక్యూరిటీ చెక్ - కీస్ ఉన్నాయో లేదో చూడటం
+    if (!accessToken || !igId) {
+      console.error("Missing Keys in Environment Variables!");
       return NextResponse.json({ 
         success: false, 
-        error: `Instagram Business Account దొరకలేదు! మీరు ఇచ్చిన పేజీ పేరు: ${igAccountData.name || 'Unknown'}. దయచేసి ఈ పేజీకి ఇన్స్టాగ్రామ్ లింక్ అయిందో లేదో ఫేస్‌బుక్ సెట్టింగ్స్‌లో చూడండి.`,
-        debug: igAccountData
+        error: "Server configuration error. API keys are missing." 
       });
     }
 
-    const igId = igAccountData.instagram_business_account.id;
-    console.log("Found Instagram ID:", igId);
+    console.log("Starting Instagram Post for ID:", igId);
 
-    // 2. మీడియా కంటైనర్ క్రియేట్ చేయడం
-    const containerRes = await fetch(
-      `https://graph.facebook.com/v19.0/${igId}/media?image_url=${encodeURIComponent(mediaUrl)}&caption=${encodeURIComponent(content)}&access_token=${accessToken}`,
-      { method: "POST" }
-    );
+    // 2. మీడియా కంటైనర్ క్రియేట్ చేయడం (Step 1)
+    const containerUrl = `https://graph.facebook.com/v19.0/${igId}/media?image_url=${encodeURIComponent(mediaUrl)}&caption=${encodeURIComponent(content)}&access_token=${accessToken}`;
+    
+    const containerRes = await fetch(containerUrl, { method: "POST" });
     const containerData = await containerRes.json();
 
     if (!containerData.id) {
-      return NextResponse.json({ success: false, error: "Media container creation failed", debug: containerData });
+      console.error("Container Creation Failed:", containerData);
+      return NextResponse.json({ 
+        success: false, 
+        error: containerData.error?.message || "Media container creation failed",
+        debug: containerData 
+      });
     }
 
-    // 3. పబ్లిష్ చేయడం
-    const publishRes = await fetch(
-      `https://graph.facebook.com/v19.0/${igId}/media_publish?creation_id=${containerData.id}&access_token=${accessToken}`,
-      { method: "POST" }
-    );
+    const creationId = containerData.id;
+    console.log("Media Container Created. ID:", creationId);
+
+    // 3. మీడియా పబ్లిష్ చేయడం (Step 2)
+    const publishUrl = `https://graph.facebook.com/v19.0/${igId}/media_publish?creation_id=${creationId}&access_token=${accessToken}`;
+    
+    const publishRes = await fetch(publishUrl, { method: "POST" });
     const publishData = await publishRes.json();
 
-    return publishData.id 
-      ? NextResponse.json({ success: true, postId: publishData.id }) 
-      : NextResponse.json({ success: false, error: "Publish failed", debug: publishData });
+    if (publishData.id) {
+      console.log("Post Published Successfully! ID:", publishData.id);
+      return NextResponse.json({ 
+        success: true, 
+        postId: publishData.id,
+        message: "Instagram Post Success! 🚀"
+      });
+    } else {
+      console.error("Publishing Failed:", publishData);
+      return NextResponse.json({ 
+        success: false, 
+        error: publishData.error?.message || "Publishing failed",
+        debug: publishData 
+      });
+    }
 
   } catch (err: any) {
-    console.error("Instagram Error:", err);
+    console.error("Unexpected Instagram Error:", err);
     return NextResponse.json({ success: false, error: err.message });
   }
 }
