@@ -4,13 +4,16 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(req: Request) {
   try {
-    const { title, description, videoUrl, tags } = await req.json();
+    const body = await req.json();
+    // ఇక్కడ మార్పు చేశాను: mediaUrl ని కూడా వెతుకుతుంది
+    const { title, description, tags } = body;
+    const videoUrl = body.videoUrl || body.mediaUrl; 
 
     if (!videoUrl) {
-      return NextResponse.json({ success: false, error: "Video URL మిస్ అయ్యింది!" });
+      return NextResponse.json({ success: false, error: "వీడియో లింక్ దొరకలేదు! (videoUrl or mediaUrl missing)" });
     }
 
-    // 1. Access Token సంపాదించడం (Refresh Token వాడి)
+    // 1. Access Token సంపాదించడం
     const tokenRes = await fetch("https://oauth2.googleapis.com/token", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -26,11 +29,10 @@ export async function POST(req: Request) {
     const accessToken = tokenData.access_token;
 
     if (!accessToken) {
-      return NextResponse.json({ success: false, error: "Google Access Token రాలేదు. కీస్ చెక్ చేయండి." });
+      return NextResponse.json({ success: false, error: "Google Access Token రాలేదు." });
     }
 
-    // 2. YouTube Resumable Upload ని ప్రారంభించడం
-    // ఇది వీడియో మెటాడేటాని పంపిస్తుంది
+    // 2. YouTube Resumable Upload ప్రారంభం
     const metadataRes = await fetch(
       "https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&part=snippet,status",
       {
@@ -43,24 +45,19 @@ export async function POST(req: Request) {
         body: JSON.stringify({
           snippet: {
             title: title || "New Video from PostJet",
-            description: description || "Uploaded via PostJet SaaS",
+            description: description || "Uploaded via PostJet",
             tags: tags || [],
-            categoryId: "22", // People & Blogs
+            categoryId: "22",
           },
-          status: {
-            privacyStatus: "public",
-          },
+          status: { privacyStatus: "public" },
         }),
       }
     );
 
     const uploadUrl = metadataRes.headers.get("Location");
+    if (!uploadUrl) return NextResponse.json({ success: false, error: "YouTube Upload URL రాలేదు." });
 
-    if (!uploadUrl) {
-      return NextResponse.json({ success: false, error: "YouTube Upload URL రాలేదు." });
-    }
-
-    // 3. క్లౌడినరీ నుండి వీడియోను తెచ్చుకుని యూట్యూబ్‌కి పంపడం
+    // 3. వీడియో ఫైల్‌ను పంపడం
     const videoFileRes = await fetch(videoUrl);
     const videoBlob = await videoFileRes.blob();
 
@@ -71,10 +68,9 @@ export async function POST(req: Request) {
     });
 
     if (uploadRes.ok) {
-      return NextResponse.json({ success: true, message: "YouTube Video Uploaded Successfully! 🎉" });
+      return NextResponse.json({ success: true, message: "YouTube Success! 🎉" });
     } else {
-      const errorData = await uploadRes.json();
-      return NextResponse.json({ success: false, error: "YouTube Upload Failed", details: errorData });
+      return NextResponse.json({ success: false, error: "Upload Failed at YouTube" });
     }
 
   } catch (error: any) {
