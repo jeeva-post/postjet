@@ -2,49 +2,43 @@ import { NextResponse } from "next/server";
 
 export async function POST(req: Request) {
   try {
-    const { content, mediaUrl, title } = await req.json();
-    const accessToken = process.env.PINTEREST_ACCESS_TOKEN;
-    const boardId = process.env.PINTEREST_BOARD_ID;
+    const { content, mediaUrl } = await req.json();
 
-    if (!accessToken || !boardId) {
-      return NextResponse.json({ success: false, error: "Pinterest Config Missing (Token/Board ID)" });
-    }
+    // 1. Refresh Token ఉపయోగించి కొత్త Access Token తెచ్చుకోవడం
+    const auth = Buffer.from(`${process.env.PINTEREST_CLIENT_ID}:${process.env.PINTEREST_CLIENT_SECRET}`).toString('base64');
+    const tokenRes = await fetch("https://api.pinterest.com/v5/oauth/token", {
+      method: "POST",
+      headers: {
+        "Authorization": `Basic ${auth}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: process.env.PINTEREST_REFRESH_TOKEN!,
+      }),
+    });
 
-    console.log("--- Pinterest Posting Attempt ---");
+    const tokenData = await tokenRes.json();
+    const accessToken = tokenData.access_token;
 
-    const response = await fetch("https://api.pinterest.com/v5/pins", {
+    // 2. పింటరెస్ట్ కి పోస్ట్ చేయడం
+    const postRes = await fetch("https://api.pinterest.com/v5/pins", {
       method: "POST",
       headers: {
         "Authorization": `Bearer ${accessToken}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        board_id: boardId,
-        title: title || "Posted via PostJet",
-        description: content || "Check out this post!",
-        media_source: {
-          source_type: "image_url",
-          url: mediaUrl, // Pinterest కచ్చితంగా పబ్లిక్ ఇమేజ్ లింక్ అడుగుతుంది
-        },
+        board_id: process.env.PINTEREST_BOARD_ID,
+        media_source: { source_type: "image_url", url: mediaUrl },
+        description: content,
       }),
     });
 
-    const data = await response.json();
-
-    if (response.ok) {
-      console.log("✅ Pinterest Success:", data.id);
-      return NextResponse.json({ success: true, message: "Pinterest Pin Created! 📌", id: data.id });
-    } else {
-      console.error("❌ Pinterest Error Details:", JSON.stringify(data, null, 2));
-      return NextResponse.json({ 
-        success: false, 
-        error: data.message || "Pinterest Post Failed", 
-        debug: data 
-      });
-    }
+    const result = await postRes.json();
+    return NextResponse.json({ success: postRes.ok, data: result });
 
   } catch (err: any) {
-    console.error("🔥 Pinterest Critical Error:", err);
     return NextResponse.json({ success: false, error: err.message });
   }
 }
