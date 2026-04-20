@@ -1,7 +1,17 @@
-import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
+import {
+  ClerkProvider,
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton
+} from '@clerk/nextjs'
 import './globals.css'
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   return (
     <ClerkProvider>
       <html lang="en">
@@ -17,21 +27,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className="flex items-center gap-4">
               <SignedOut>
                 <SignInButton mode="modal">
-                  <button className="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                  <button className="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">
                     Sign In
                   </button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                <UserButton afterSignOutUrl="/" appearance={{
-                  elements: {
-                    userButtonAvatarBox: "w-10 h-10 rounded-xl"
-                  }
-                }} />
+                <UserButton />
               </SignedIn>
             </div>
           </header>
-          <main>{children}</main>
+          {children}
         </body>
       </html>
     </ClerkProvider>
