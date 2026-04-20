@@ -1,51 +1,59 @@
-"use client";
-import Link from 'next/link';
-import { ArrowRight, Zap, Share2, BarChart3, ShieldCheck } from 'lucide-react';
+import { RegisterLink, LoginLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { ArrowRight, Zap, CheckCircle2 } from "lucide-react";
 
-export default function LandingPage() {
+export default async function Home() {
+  const { isAuthenticated } = getKindeServerSession();
+  const isUserAuthenticated = await isAuthenticated();
+
   return (
-    <div className="min-h-screen bg-white">
-      {/* Hero Section */}
-      <section className="pt-20 pb-32 px-6 text-center max-w-5xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-600 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-8 border border-blue-100">
-          <Zap size={14} className="fill-blue-600" /> Blast Your Content Everywhere
+    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-80px)] bg-white px-6 relative overflow-hidden">
+      
+      {/* Background Pattern */}
+      <div className="absolute inset-0 z-0 opacity-[0.03] pointer-events-none" 
+           style={{ backgroundImage: 'radial-gradient(#2563eb 1px, transparent 1px)', size: '40px 40px' }} />
+
+      <div className="max-w-5xl text-center z-10">
+        {/* Badge */}
+        <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest mb-10 border border-blue-100">
+          <Zap size={14} fill="currentColor" /> Simple • Powerful • Fast
         </div>
-        <h1 className="text-6xl md:text-7xl font-black text-slate-900 tracking-tight leading-[0.9] mb-8 italic">
-          ONE POST.<br />
-          <span className="text-blue-600">ALL PLATFORMS.</span>
-        </h1>
-        <p className="text-xl text-slate-500 font-medium max-w-2xl mx-auto mb-12">
-          PostJet is the ultimate social engine. Write once, blast everywhere. Manage 12+ platforms from a single powerful dashboard.
-        </p>
         
-        <div className="flex flex-col sm:flex-row justify-center gap-4">
-          <Link href="/dashboard" className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:bg-blue-600 transition-all shadow-2xl flex items-center justify-center gap-3">
-            Start Free Trial <ArrowRight size={18} />
-          </Link>
-          <Link href="/dashboard/billing" className="bg-white text-slate-900 border-2 border-slate-100 px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] hover:border-blue-200 transition-all flex items-center justify-center">
-            View Pricing
-          </Link>
-        </div>
-      </section>
+        {/* Main Heading - నువ్వు అడిగిన టెక్స్ట్ ఇక్కడే ఉంది */}
+        <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[1.1] text-slate-900 mb-8 uppercase italic">
+          SINGLE CLICK TO POST<br />
+          <span className="text-blue-600 not-italic">ALL SOCIAL MEDIA PLATFORMS</span>
+        </h1>
+        
+        <p className="text-lg md:text-xl text-slate-500 font-medium max-w-2xl mx-auto mb-12 leading-relaxed">
+          Stop manual posting. Connect your accounts once and blast your content everywhere with just one tap. The ultimate tool for modern creators.
+        </p>
 
-      {/* Features Grid */}
-      <section className="bg-slate-50 py-24 px-6 border-t border-slate-100">
-        <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 text-center">
-          <Feature icon={<Share2 className="text-blue-600" />} title="12+ Platforms" desc="Connect FB, Insta, X, Telegram, and more in seconds." />
-          <Feature icon={<BarChart3 className="text-indigo-600" />} title="Smart Analytics" desc="Track engagement and growth across all networks." />
-          <Feature icon={<ShieldCheck className="text-green-600" />} title="Secure Engine" desc="Enterprise-grade security for all your social accounts." />
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-5">
+          {!isUserAuthenticated ? (
+            <>
+              <RegisterLink className="bg-blue-600 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-blue-700 transition-all shadow-2xl shadow-blue-500/30 active:scale-95 w-full sm:w-auto justify-center">
+                Get Started For Free <ArrowRight size={18} strokeWidth={3} />
+              </RegisterLink>
+              <LoginLink className="text-slate-900 font-black text-xs uppercase tracking-widest px-8 py-5 hover:bg-slate-50 rounded-2xl transition-all border border-slate-200">
+                Sign In
+              </LoginLink>
+            </>
+          ) : (
+            <a href="/dashboard" className="bg-slate-900 text-white px-10 py-5 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-black transition-all shadow-2xl active:scale-95">
+              Open My Dashboard <ArrowRight size={18} strokeWidth={3} />
+            </a>
+          )}
         </div>
-      </section>
-    </div>
-  );
-}
 
-function Feature({ icon, title, desc }: any) {
-  return (
-    <div className="flex flex-col items-center">
-      <div className="w-16 h-16 bg-white rounded-3xl shadow-xl flex items-center justify-center mb-6">{icon}</div>
-      <h3 className="text-xl font-black mb-3">{title}</h3>
-      <p className="text-slate-500 font-medium text-sm leading-relaxed">{desc}</p>
+        {/* Trust Markers */}
+        <div className="mt-16 flex flex-wrap justify-center gap-8 text-slate-400 font-bold text-[10px] uppercase tracking-widest">
+           <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-blue-500" /> No Credit Card Required</div>
+           <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-blue-500" /> Unlimited Platforms</div>
+           <div className="flex items-center gap-2"><CheckCircle2 size={16} className="text-blue-500" /> Lightning Fast</div>
+        </div>
+      </div>
     </div>
   );
 }
