@@ -5,28 +5,34 @@ export async function GET() {
   const clientSecret = process.env.PINTEREST_CLIENT_SECRET?.trim();
   const refreshToken = process.env.PINTEREST_REFRESH_TOKEN?.trim();
 
+  if (!clientId || !clientSecret || !refreshToken) {
+    return NextResponse.json({ error: "Vercel variables are missing!" });
+  }
+
+  // Header ని మళ్ళీ క్లీన్ గా తయారు చేయడం
+  const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
   try {
-    // పద్ధతి 2: Authorization Header వాడకుండా నేరుగా Body లో క్రెడెన్షియల్స్ పంపడం
     const tokenRes = await fetch("https://api.pinterest.com/v5/oauth/token", {
       method: "POST",
       headers: {
+        "Authorization": `Basic ${auth}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
+      // ఇక్కడ ఖచ్చితమైన ఫార్మాట్ వాడుతున్నాం
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        refresh_token: refreshToken!,
-        client_id: clientId!,
-        client_secret: clientSecret!,
-      }),
+        refresh_token: refreshToken,
+      }).toString(),
     });
 
     const tokenData = await tokenRes.json();
 
     if (!tokenRes.ok) {
       return NextResponse.json({ 
-        error: "Method 2 Failed", 
-        pinterest_says: tokenData.message,
-        hint: "Are these credentials from the SAME app where you got the refresh token?"
+        error: "Auth Failed again", 
+        pinterest_message: tokenData.message,
+        tip: "Check if your Client ID/Secret in Vercel has any extra quotes or spaces."
       });
     }
 
