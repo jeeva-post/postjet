@@ -4,7 +4,7 @@ export async function GET() {
   // ఇక్కడ నీ వివరాలు మార్చు
   const clientId = 'నీ_CLIENT_ID'; 
   const clientSecret = 'నీ_CLIENT_SECRET'; 
-  const code = 'నీకు_ఇప్పుడే_వచ్చిన_కొత్త_CODE'; // బ్రౌజర్ నుండి కాపీ చేసినది
+  const code = '9559a7472f531dc0a211a5e8928153f38e6e9f07'; // బ్రౌజర్ నుండి కాపీ చేసినది
   const redirectUri = 'https://postjet.vercel.app/';
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
