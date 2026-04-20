@@ -19,6 +19,7 @@ export default function RootLayout({
           <header className="flex justify-between items-center p-4 px-8 bg-white border-b border-slate-100 sticky top-0 z-50">
             <div className="flex items-center gap-2">
               <div className="bg-blue-600 p-1.5 rounded-lg shadow-lg">
+                {/* ఇక్కడ లోగో పాత్ ని కచ్చితంగా చెక్ చెయ్యి */}
                 <img src="/logo.png" alt="PostJet" className="w-6 h-6 invert" />
               </div>
               <span className="font-black text-xl tracking-tighter italic uppercase text-slate-900">PostJet</span>
