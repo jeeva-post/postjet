@@ -8,15 +8,15 @@ import {
 } from 'lucide-react';
 import toast, { Toaster } from 'react-hot-toast';
 
-export default function PostJetBigLogoSaaS() {
+export default function PostJetFinalSaaS() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // బ్యాక్‌గ్రౌండ్ లేని నీ PNG లోగో పాత్
+  // ఇక్కడ నీ లోగో ఫైల్ పేరు సరిగ్గా ఉందో లేదో చూసుకో
   const logoPath = "/logo.png"; 
 
   const handlePublish = () => {
-    if (!content) { toast.error("Write some content!"); return; }
+    if (!content) { toast.error("Write something!"); return; }
     setLoading(true);
     setTimeout(() => {
       toast.success('Campaign Blast Off!');
@@ -31,17 +31,16 @@ export default function PostJetBigLogoSaaS() {
       {/* --- SIDEBAR --- */}
       <aside className="w-64 bg-[#0F172A] text-white p-6 flex flex-col sticky top-0 h-screen hidden lg:flex border-r border-slate-800/50">
         
-        {/* --- BRAND LOGO: BIG & CLEAN (No White Box) --- */}
+        {/* --- BRAND LOGO: BIG & CLEAN --- */}
         <div className="mb-14 px-1 group cursor-pointer">
-          {/* ఇక్కడ h-28 పెట్టి లోగో సైజును పెంచాను మరియు bg-white తీసేశాను */}
-          <div className="flex items-center justify-center overflow-hidden h-28 transition-all duration-500 group-hover:scale-110">
+          <div className="flex items-center justify-center overflow-hidden h-32 transition-all duration-500 group-hover:scale-105">
              <img 
                src={logoPath} 
                alt="PostJet Logo" 
-               // w-full h-full వాడటం వల్ల లోగో ఆ కంటైనర్ మొత్తం కనిపిస్తుంది
-               className="w-full h-full object-contain filter drop-shadow-2xl" 
+               className="w-full h-full object-contain" 
                onError={(e) => { 
-                 e.currentTarget.src = "https://cdn-icons-png.flaticon.com/512/2111/2111646.png"; 
+                 // ఒకవేళ లోగో రాకపోతే లోగో పేరు తప్పు అని అర్థం
+                 console.error("Logo not found at:", logoPath);
                }} 
              />
           </div>
@@ -58,11 +57,10 @@ export default function PostJetBigLogoSaaS() {
           <NavItem icon={<Settings size={20}/>} label="App Settings" />
         </nav>
 
-        {/* Usage Card */}
         <div className="mt-auto bg-slate-800/20 p-5 rounded-2xl border border-slate-700/30">
           <div className="flex justify-between text-[10px] font-black mb-3 text-slate-500 uppercase tracking-tighter">
             <span>Posts Used</span>
-            <span className="text-blue-400 font-bold">12 / 50</span>
+            <span className="text-blue-400">12 / 50</span>
           </div>
           <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
             <div className="bg-blue-500 h-full w-[24%]" />
@@ -78,23 +76,22 @@ export default function PostJetBigLogoSaaS() {
             <input type="text" placeholder="Search campaign..." className="bg-transparent border-none outline-none text-sm ml-2 w-full font-medium" />
           </div>
           <div className="flex items-center gap-6">
-             <div className="text-right leading-tight"><p className="text-sm font-black text-slate-800">Jeevan Kumar</p><p className="text-[10px] text-blue-600 font-bold uppercase tracking-tighter">Founder access</p></div>
-             <div className="w-11 h-11 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-xs shadow-xl ring-2 ring-blue-500/10">JK</div>
+             <div className="text-right leading-tight"><p className="text-sm font-black text-slate-800">Jeevan Kumar</p><p className="text-[10px] text-blue-600 font-bold uppercase tracking-tighter">Founder Access</p></div>
+             <div className="w-11 h-11 bg-slate-900 rounded-2xl flex items-center justify-center text-white font-black text-xs shadow-xl">JK</div>
           </div>
         </header>
 
         <div className="flex-1 overflow-y-auto p-10 space-y-10">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Campaign Manager</h2>
-                <p className="text-sm text-slate-500 font-medium mt-1">Ready to scale your social presence?</p>
+                <h2 className="text-3xl font-black text-slate-900 tracking-tight">Create Post</h2>
+                <p className="text-sm text-slate-500 font-medium mt-1">Ready to blast your content worldwide?</p>
               </div>
               <div className="px-4 py-2 bg-white rounded-xl shadow-sm border border-slate-200/60 flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" /> <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">PostJet Engines Active</span>
               </div>
             </div>
 
-            {/* 01. Content Section */}
             <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-200/60 transition-all hover:border-blue-200 hover:shadow-xl group">
               <div className="flex items-center gap-3 mb-8">
                  <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-black text-sm group-hover:bg-blue-600 group-hover:text-white transition-all">01</div>
@@ -103,7 +100,6 @@ export default function PostJetBigLogoSaaS() {
               <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="What are we blasting today?" className="w-full p-8 bg-slate-50 border border-slate-100 rounded-[2rem] min-h-[200px] outline-none text-xl leading-relaxed resize-none shadow-inner focus:border-blue-400 transition-all" />
             </div>
 
-            {/* 02. Channels Section */}
             <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-slate-200/60">
                <h3 className="font-black text-slate-800 uppercase tracking-widest text-xs mb-8 flex items-center gap-2">
                  <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center font-black text-sm">02</div>
