@@ -3,7 +3,7 @@ import {
   SignInButton,
   SignedIn,
   SignedOut,
-  UserButton
+  UserButton,
 } from '@clerk/nextjs'
 import './globals.css'
 
@@ -27,13 +27,13 @@ export default function RootLayout({
             <div className="flex items-center gap-4">
               <SignedOut>
                 <SignInButton mode="modal">
-                  <button className="bg-blue-600 text-white px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">
+                  <button className="bg-blue-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg">
                     Sign In
                   </button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>
-                <UserButton />
+                <UserButton afterSignOutUrl="/" />
               </SignedIn>
             </div>
           </header>
