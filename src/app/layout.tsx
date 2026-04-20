@@ -1,11 +1,10 @@
-import {
-  ClerkProvider,
-  SignInButton,
-  SignedIn,
-  SignedOut,
-  UserButton
-} from '@clerk/nextjs'
+import { ClerkProvider, SignInButton, SignedIn, SignedOut, UserButton } from '@clerk/nextjs'
 import './globals.css'
+
+export const metadata = {
+  title: 'PostJet - Social Blast',
+  description: 'One post to all platforms',
+}
 
 export default function RootLayout({
   children,
@@ -21,13 +20,13 @@ export default function RootLayout({
               <div className="bg-blue-600 p-2 rounded-xl">
                  <img src="/logo.png" alt="PostJet" className="w-5 h-5 invert" />
               </div>
-              <span className="font-black text-xl italic uppercase tracking-tighter">PostJet</span>
+              <span className="font-black text-xl italic uppercase tracking-tighter text-slate-900">PostJet</span>
             </div>
             
-            <div className="flex items-center">
+            <div className="flex items-center gap-4">
               <SignedOut>
                 <SignInButton mode="modal">
-                  <button className="bg-blue-600 text-white px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/20">
+                  <button className="bg-blue-600 text-white px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-blue-700 transition-all shadow-lg active:scale-95">
                     Sign In
                   </button>
                 </SignInButton>
