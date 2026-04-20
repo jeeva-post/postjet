@@ -4,12 +4,13 @@ export async function POST(req: Request) {
   try {
     const { content, mediaUrl } = await req.json();
 
-    // 1. Refresh Token ఉపయోగించి కొత్త Access Token తెచ్చుకోవడం
-    // గమనిక: టోకెన్ రిఫ్రెష్ చేయడానికి ప్రొడక్షన్ URL నే వాడాలి
-    const auth = Buffer.from(
-      `${process.env.PINTEREST_CLIENT_ID}:${process.env.PINTEREST_CLIENT_SECRET}`
-    ).toString('base64');
+    const clientId = process.env.PINTEREST_CLIENT_ID?.trim();
+    const clientSecret = process.env.PINTEREST_CLIENT_SECRET?.trim();
+    const refreshToken = process.env.PINTEREST_REFRESH_TOKEN?.trim();
 
+    const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
+
+    // 1. Refresh Token Call
     const tokenRes = await fetch("https://api.pinterest.com/v5/oauth/token", {
       method: "POST",
       headers: {
@@ -18,7 +19,7 @@ export async function POST(req: Request) {
       },
       body: new URLSearchParams({
         grant_type: "refresh_token",
-        refresh_token: process.env.PINTEREST_REFRESH_TOKEN!,
+        refresh_token: refreshToken!,
       }),
     });
 
@@ -27,15 +28,14 @@ export async function POST(req: Request) {
     if (!tokenRes.ok) {
       return NextResponse.json({ 
         success: false, 
-        error: "Token Refresh Failed", 
+        error: "Token Refresh Failed (Check ClientID/Secret/RefreshToken in Vercel)", 
         details: tokenData 
       });
     }
 
     const accessToken = tokenData.access_token;
 
-    // 2. పింటరెస్ట్ కి పోస్ట్ చేయడం (Sandbox URL ఉపయోగిస్తున్నాం)
-    // ఎందుకంటే నీ యాప్ ప్రస్తుతానికి 'Trial' మోడ్‌లో ఉంది
+    // 2. Pin Creation (Sandbox URL)
     const postRes = await fetch("https://api-sandbox.pinterest.com/v5/pins", {
       method: "POST",
       headers: {
@@ -43,7 +43,7 @@ export async function POST(req: Request) {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        board_id: process.env.PINTEREST_BOARD_ID,
+        board_id: process.env.PINTEREST_BOARD_ID?.trim(),
         media_source: {
           source_type: "image_url",
           url: mediaUrl,
@@ -59,13 +59,12 @@ export async function POST(req: Request) {
     } else {
       return NextResponse.json({ 
         success: false, 
-        error: result.message || "Pinterest Sandbox Error", 
+        error: "Pin Creation Failed (Check Board ID or Sandbox access)", 
         details: result 
       });
     }
 
   } catch (err: any) {
-    console.error("Pinterest API Route Error:", err);
     return NextResponse.json({ success: false, error: err.message });
   }
 }
