@@ -1,32 +1,26 @@
-import { MongoClient } from "mongodb";
+import { MongoClient } from 'mongodb';
 
-if (!process.env.MONGODB_URI) {
-  // బిల్డ్ టైమ్ లో ఇది ఎర్రర్ ఇచ్చి ఆగిపోకుండా కేవలం వార్నింగ్ ఇస్తుంది
-  console.warn('Warning: MONGODB_URI is not defined in environment variables');
+if (!process.env.DATABASE_URL) {
+  throw new Error('Please add your DATABASE_URL to .env.local');
 }
 
-const uri = process.env.MONGODB_URI || ""; 
-const options = {};
-
-let client;
+const uri = process.env.DATABASE_URL;
+let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
-if (process.env.NODE_ENV === "development") {
-  // డెవలప్‌మెంట్ లో కనెక్షన్ పదే పదే అవ్వకుండా ఈ లాజిక్ వాడుతున్నాం
+if (process.env.NODE_ENV === 'development') {
   let globalWithMongo = global as typeof globalThis & {
     _mongoClientPromise?: Promise<MongoClient>;
   };
 
   if (!globalWithMongo._mongoClientPromise) {
-    client = new MongoClient(uri, options);
+    client = new MongoClient(uri);
     globalWithMongo._mongoClientPromise = client.connect();
   }
   clientPromise = globalWithMongo._mongoClientPromise;
 } else {
-  // ప్రొడక్షన్ (Vercel) లో ఇది కొత్త కనెక్షన్ తీసుకుంటుంది
-  client = new MongoClient(uri, options);
+  client = new MongoClient(uri);
   clientPromise = client.connect();
 }
 
-// Export a module-scoped MongoClient promise. 
 export default clientPromise;
