@@ -1,10 +1,10 @@
 import { MongoClient } from 'mongodb';
 
-if (!process.env.DATABASE_URL) {
-  throw new Error('Please add your DATABASE_URL to .env.local');
+if (!process.env.MONGODB_URI) {
+  throw new Error('Please add your MONGODB_URI to .env file');
 }
 
-const uri = process.env.DATABASE_URL;
+const uri = process.env.MONGODB_URI;
 let client: MongoClient;
 let clientPromise: Promise<MongoClient>;
 
