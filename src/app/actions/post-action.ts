@@ -1,52 +1,64 @@
 "use server";
 
-export async function postToTelegram(formData: FormData): Promise<void> {
+import clientPromise from "@/lib/mongodb";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { v2 as cloudinary } from "cloudinary";
+
+// --- నీ వెర్సెల్ వేరియబుల్స్ కి తగ్గట్టుగా సెట్టింగ్స్ ---
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_NAME, // నీ వెర్సెల్ లో ఉన్న పేరు
+  api_key: process.env.CLOUDINARY_KEY,    // నీ వెర్సెల్ లో ఉన్న పేరు
+  api_secret: process.env.CLOUDINARY_SECRET, // నీ వెర్సెల్ లో ఉన్న పేరు
+});
+
+async function uploadToCloudinary(file: File) {
+  const arrayBuffer = await file.arrayBuffer();
+  const buffer = Buffer.from(arrayBuffer);
+  return new Promise((resolve, reject) => {
+    cloudinary.uploader.upload_stream({ resource_type: "auto" }, (error, result) => {
+      if (error) reject(error);
+      else resolve(result?.secure_url);
+    }).end(buffer);
+  });
+}
+
+// ... (మిగతా టెలిగ్రామ్ & ఇన్‌స్టాగ్రామ్ హెల్పర్ ఫంక్షన్స్ ఇక్కడే ఉంటాయి) ...
+
+export async function postToAllPlatforms(formData: FormData): Promise<void> {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
+  if (!user) return;
+
   const content = formData.get("content") as string;
   const file = formData.get("media") as File;
+  const hasFile = file && file.size > 0;
 
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  let mediaUrl = "";
+  if (hasFile) mediaUrl = (await uploadToCloudinary(file)) as string;
 
-  if (!botToken || !chatId) return;
-
-  try {
-    const hasFile = file && file.size > 0;
-    const isVideo = hasFile && file.type.startsWith("video/");
-    const isImage = hasFile && file.type.startsWith("image/");
-
-    // 1. VIDEO unte
-    if (isVideo) {
-      const vidData = new FormData();
-      vidData.append("chat_id", chatId);
-      vidData.append("caption", content || "");
-      vidData.append("video", file);
-
-      await fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, {
-        method: "POST",
-        body: vidData,
-      });
-    } 
-    // 2. IMAGE unte
-    else if (isImage) {
-      const imgData = new FormData();
-      imgData.append("chat_id", chatId);
-      imgData.append("caption", content || "");
-      imgData.append("photo", file);
-
-      await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, {
-        method: "POST",
-        body: imgData,
-      });
-    } 
-    // 3. Kevalam TEXT unte
-    else if (content) {
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: content }),
-      });
+  const tasks = [];
+  if (hasFile) {
+    // Telegram
+    tasks.push(postToTelegram(content, file));
+    
+    // Instagram (Media URL అవసరం)
+    if (process.env.INSTAGRAM_ACCESS_TOKEN) {
+        tasks.push(postToInstagram(content, mediaUrl, file.type.startsWith("video/")));
     }
-  } catch (error) {
-    console.error("Posting Error:", error);
+    
+    // YouTube (వీడియో అయితేనే)
+    if (file.type.startsWith("video/") && process.env.YOUTUBE_ACCESS_TOKEN) {
+        tasks.push(postToYouTube(content, file));
+    }
   }
+
+  await Promise.allSettled(tasks);
+
+  const client = await clientPromise;
+  await client.db("postjet").collection("posts").insertOne({
+    userId: user.id,
+    content,
+    mediaUrl,
+    createdAt: new Date(),
+  });
 }
