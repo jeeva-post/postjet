@@ -7,14 +7,12 @@ export async function postToTelegram(formData: FormData): Promise<void> {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
-  if (!botToken || !chatId) {
-    console.error("Credentials missing!");
-    return;
-  }
+  if (!botToken || !chatId) return;
 
   try {
-    const isVideo = file && file.type.startsWith("video/");
-    const isImage = file && file.type.startsWith("image/");
+    const hasFile = file && file.size > 0;
+    const isVideo = hasFile && file.type.startsWith("video/");
+    const isImage = hasFile && file.type.startsWith("image/");
 
     // 1. VIDEO unte
     if (isVideo) {
@@ -49,6 +47,6 @@ export async function postToTelegram(formData: FormData): Promise<void> {
       });
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.error("Posting Error:", error);
   }
 }

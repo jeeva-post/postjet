@@ -1,88 +1,56 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { redirect } from "next/navigation";
-import clientPromise from "@/lib/mongodb";
-import { LayoutDashboard, Send, Settings, Image as ImageIcon } from "lucide-react";
+import { LayoutDashboard, Send, Settings, Image as ImageIcon, Video, Paperclip } from "lucide-react";
 import { postToTelegram } from "../actions/post-action";
-
-async function syncUser(user: any) {
-  if (!user) return;
-  try {
-    const client = await clientPromise;
-    const db = client.db("postjet");
-    await db.collection("users").updateOne(
-      { kindeId: user.id },
-      {
-        $set: {
-          kindeId: user.id,
-          email: user.email,
-          name: `${user.given_name} ${user.family_name}`,
-          image: user.picture,
-          updatedAt: new Date(),
-        },
-      },
-      { upsert: true }
-    );
-  } catch (e) {
-    console.error("DB Sync Error:", e);
-  }
-}
 
 export default async function Dashboard() {
   const { isAuthenticated, getUser } = getKindeServerSession();
-  if (!(await isAuthenticated())) {
-    redirect("/api/auth/login");
-  }
-
+  if (!(await isAuthenticated())) redirect("/api/auth/login");
   const user = await getUser();
-  await syncUser(user);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col p-6">
-        <div className="flex items-center gap-2 mb-10">
-          <div className="bg-blue-600 p-2 rounded-xl text-white"><Send size={16} /></div>
-          <span className="font-black text-xl italic uppercase tracking-tighter">PostJet</span>
-        </div>
+    <div className="min-h-screen bg-slate-50 flex font-sans">
+      <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col p-8">
+        <div className="flex items-center gap-3 mb-12 font-black text-2xl italic uppercase tracking-tighter text-blue-600">PostJet</div>
         <nav className="space-y-4">
-          <a href="/dashboard" className="flex items-center gap-3 bg-blue-50 text-blue-600 p-3 rounded-xl font-black text-[10px] uppercase tracking-widest">
-            <LayoutDashboard size={18} /> Home
+          <a href="/dashboard" className="flex items-center gap-4 bg-blue-50 text-blue-600 p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest">
+            <LayoutDashboard size={20} /> Home
           </a>
-          <a href="/dashboard/accounts" className="flex items-center gap-3 text-slate-400 p-3 rounded-xl font-black text-[10px] uppercase tracking-widest">
-            <Settings size={18} /> Connections
+          <a href="/dashboard/accounts" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-bold uppercase text-[10px] tracking-widest hover:text-blue-600 transition-all">
+            <Settings size={20} /> Connections
           </a>
         </nav>
       </aside>
 
-      <main className="flex-1 p-6 md:p-10">
+      <main className="flex-1 p-12">
         <header className="mb-10">
-          <h2 className="text-4xl font-black tracking-tighter text-slate-900 uppercase italic">
-            Welcome, {user?.given_name}!
-          </h2>
-          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">Time to post everywhere</p>
+            <h2 className="text-5xl font-black tracking-tighter uppercase italic text-slate-900">Welcome, {user?.given_name}!</h2>
+            <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] mt-2">Ready to post everywhere?</p>
         </header>
 
-        <div className="max-w-4xl">
-          <form action={postToTelegram} className="bg-white p-8 rounded-[2.5rem] border border-slate-200 shadow-sm">
-            <div className="flex items-center gap-2 mb-6">
-              <div className="w-1 h-6 bg-blue-600 rounded-full" />
-              <h3 className="font-black text-[10px] uppercase tracking-widest text-slate-400">Create Post</h3>
-            </div>
-            
-            <textarea 
-              name="content"
-              required
-              placeholder="What's the plan for today?"
-              className="w-full h-48 p-6 bg-slate-50 rounded-3xl border-none focus:ring-2 focus:ring-blue-100 text-slate-700 font-bold resize-none mb-6 text-lg shadow-inner"
-            />
+        <form action={postToTelegram} className="bg-white p-10 rounded-[3rem] border border-slate-200 shadow-xl max-w-4xl">
+          <textarea 
+            name="content"
+            required
+            placeholder="What's the plan for today?"
+            className="w-full h-56 p-8 bg-slate-50 rounded-[2.5rem] border-none text-slate-700 font-bold mb-8 text-xl focus:ring-2 focus:ring-blue-100 transition-all"
+          />
 
-            <div className="flex justify-end items-center">
-              <button type="submit" className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95 transition-all">
-                Post Now <Send size={16} />
-              </button>
+          <div className="flex flex-wrap justify-between items-center gap-4">
+            <div className="flex gap-4">
+                {/* Media Upload Label */}
+                <label className="flex items-center gap-3 text-slate-500 font-black text-[10px] uppercase bg-slate-50 px-6 py-4 rounded-2xl border-2 border-dashed border-slate-200 cursor-pointer hover:border-blue-400 hover:text-blue-600 transition-all">
+                    <Paperclip size={18} />
+                    <span>Add Image / Video</span>
+                    <input type="file" name="media" accept="image/*,video/*" className="hidden" />
+                </label>
             </div>
-          </form>
-        </div>
+
+            <button type="submit" className="bg-blue-600 text-white px-12 py-5 rounded-[1.5rem] font-black uppercase text-[11px] flex items-center gap-4 shadow-xl shadow-blue-200 hover:bg-blue-700 active:scale-95 transition-all">
+              Post Now <Send size={18} />
+            </button>
+          </div>
+        </form>
       </main>
     </div>
   );
