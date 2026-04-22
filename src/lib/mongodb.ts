@@ -1,7 +1,7 @@
 import { MongoClient } from 'mongodb';
 
 if (!process.env.MONGODB_URI) {
-  throw new Error('Please add your MONGODB_URI to .env file');
+  throw new Error('Please add your MONGODB_URI to environment variables');
 }
 
 const uri = process.env.MONGODB_URI;
@@ -12,7 +12,6 @@ if (process.env.NODE_ENV === 'development') {
   let globalWithMongo = global as typeof globalThis & {
     _mongoClientPromise?: Promise<MongoClient>;
   };
-
   if (!globalWithMongo._mongoClientPromise) {
     client = new MongoClient(uri);
     globalWithMongo._mongoClientPromise = client.connect();

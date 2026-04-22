@@ -23,7 +23,7 @@ async function syncUser(user: any) {
       { upsert: true }
     );
   } catch (e) {
-    console.error("Database Sync Error:", e);
+    console.error("DB Sync Error:", e);
   }
 }
 
@@ -37,7 +37,7 @@ export default async function Dashboard() {
   await syncUser(user);
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans">
+    <div className="min-h-screen bg-slate-50 flex">
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r border-slate-200 hidden lg:flex flex-col p-6">
         <div className="flex items-center gap-2 mb-10">
@@ -48,19 +48,18 @@ export default async function Dashboard() {
           <a href="/dashboard" className="flex items-center gap-3 bg-blue-50 text-blue-600 p-3 rounded-xl font-black text-[10px] uppercase tracking-widest">
             <LayoutDashboard size={18} /> Home
           </a>
-          <a href="/dashboard/accounts" className="flex items-center gap-3 text-slate-400 p-3 rounded-xl font-black text-[10px] uppercase tracking-widest hover:text-blue-600 transition-all">
+          <a href="/dashboard/accounts" className="flex items-center gap-3 text-slate-400 p-3 rounded-xl font-black text-[10px] uppercase tracking-widest">
             <Settings size={18} /> Connections
           </a>
         </nav>
       </aside>
 
-      {/* Main Dashboard */}
       <main className="flex-1 p-6 md:p-10">
         <header className="mb-10">
           <h2 className="text-4xl font-black tracking-tighter text-slate-900 uppercase italic">
             Welcome, {user?.given_name}!
           </h2>
-          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">Ready to blast content?</p>
+          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em] mt-2">Time to post everywhere</p>
         </header>
 
         <div className="max-w-4xl">
@@ -73,20 +72,12 @@ export default async function Dashboard() {
             <textarea 
               name="content"
               required
-              placeholder="Type your message here and it will go straight to Telegram..."
-              className="w-full h-48 p-6 bg-slate-50 rounded-3xl border-none focus:ring-2 focus:ring-blue-100 text-slate-700 font-bold resize-none mb-6 text-lg"
+              placeholder="What's the plan for today?"
+              className="w-full h-48 p-6 bg-slate-50 rounded-3xl border-none focus:ring-2 focus:ring-blue-100 text-slate-700 font-bold resize-none mb-6 text-lg shadow-inner"
             />
 
-            <div className="flex justify-between items-center">
-              <div className="flex items-center gap-4">
-                <button type="button" className="flex items-center gap-2 text-slate-400 font-black text-[10px] uppercase tracking-widest hover:text-slate-900 transition-all bg-slate-100 px-5 py-3 rounded-xl">
-                  <ImageIcon size={16} /> Image
-                </button>
-              </div>
-              <button 
-                type="submit" 
-                className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-500/20 transition-all active:scale-95"
-              >
+            <div className="flex justify-end items-center">
+              <button type="submit" className="bg-blue-600 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-xs flex items-center gap-3 hover:bg-blue-700 shadow-xl shadow-blue-500/20 active:scale-95 transition-all">
                 Post Now <Send size={16} />
               </button>
             </div>
