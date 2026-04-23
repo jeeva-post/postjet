@@ -1,5 +1,7 @@
 "use server";
 import { v2 as cloudinary } from "cloudinary";
+import clientPromise from "../../lib/mongodb";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 
 // Cloudinary Configuration
 cloudinary.config({
@@ -9,6 +11,10 @@ cloudinary.config({
 });
 
 export async function postToAllPlatforms(formData: FormData) {
+  const { getUser } = getKindeServerSession();
+  const user = await getUser();
+  if (!user) throw new Error("Unauthorized");
+
   const content = formData.get("content") as string;
   const file = formData.get("media") as File;
   const selected = JSON.parse(formData.get("selectedPlatforms") as string);
@@ -16,7 +22,7 @@ export async function postToAllPlatforms(formData: FormData) {
   let mediaUrl = "";
   let isVideo = file && file.type.startsWith("video");
 
-  // 1. Cloudinary Upload (మీడియా ఉంటేనే)
+  // 1. Cloudinary Upload Logic
   if (file && file.size > 0) {
     const buffer = Buffer.from(await file.arrayBuffer());
     mediaUrl = await new Promise((res, rej) => {
@@ -46,14 +52,13 @@ export async function postToAllPlatforms(formData: FormData) {
   // --- 📸 INSTAGRAM ---
   if (selected.includes("Instagram") && mediaUrl && process.env.INSTAGRAM_BUSINESS_ID) {
     tasks.push(async () => {
-      // Step 1: Create Container
-      const type = isVideo ? "VIDEO" : "IMAGE";
-      const mediaParam = isVideo ? `video_url=${encodeURIComponent(mediaUrl)}&media_type=VIDEO` : `image_url=${encodeURIComponent(mediaUrl)}`;
+      const mediaParam = isVideo 
+        ? `video_url=${encodeURIComponent(mediaUrl)}&media_type=VIDEO` 
+        : `image_url=${encodeURIComponent(mediaUrl)}`;
       
       const res = await fetch(`https://graph.facebook.com/v19.0/${process.env.INSTAGRAM_BUSINESS_ID}/media?${mediaParam}&caption=${encodeURIComponent(content)}&access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`, { method: "POST" });
       const data = await res.json();
       
-      // Step 2: Publish
       if (data.id) {
         return fetch(`https://graph.facebook.com/v19.0/${process.env.INSTAGRAM_BUSINESS_ID}/media_publish?creation_id=${data.id}&access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`, { method: "POST" });
       }
@@ -65,7 +70,6 @@ export async function postToAllPlatforms(formData: FormData) {
     tasks.push(async () => {
       const method = mediaUrl ? (isVideo ? "sendVideo" : "sendPhoto") : "sendMessage";
       const teleUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`;
-      
       const body: any = { chat_id: process.env.TELEGRAM_CHAT_ID };
       if (mediaUrl) {
         body[isVideo ? "video" : "photo"] = mediaUrl;
@@ -73,7 +77,6 @@ export async function postToAllPlatforms(formData: FormData) {
       } else {
         body["text"] = content;
       }
-
       return fetch(teleUrl, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,13 +94,11 @@ export async function postToAllPlatforms(formData: FormData) {
         to: process.env.WHATSAPP_RECIPIENT_ID,
         type: mediaUrl ? (isVideo ? "video" : "image") : "text",
       };
-
       if (mediaUrl) {
         waBody[isVideo ? "video" : "image"] = { link: mediaUrl, caption: content };
       } else {
         waBody["text"] = { body: content };
       }
-
       return fetch(waUrl, {
         method: "POST",
         headers: {
@@ -109,9 +110,18 @@ export async function postToAllPlatforms(formData: FormData) {
     });
   }
 
-  // Execute all tasks and wait for results
-  const results = await Promise.allSettled(tasks.map(task => task()));
-  console.log("Transmission Results:", results);
-  
+  // 2. Execute All Tasks
+  await Promise.allSettled(tasks.map(task => task()));
+
+  // 3. Save to Database (History)
+  const client = await clientPromise;
+  await client.db("postjet").collection("posts").insertOne({
+    userId: user.id,
+    content,
+    mediaUrl,
+    platforms: selected,
+    createdAt: new Date(),
+  });
+
   return { success: true };
 }
