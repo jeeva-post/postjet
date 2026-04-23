@@ -1,33 +1,48 @@
-"use client";
-import React from "react";
-import { motion } from "framer-motion";
+import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
+import { redirect } from "next/navigation";
+import clientPromise from "@/lib/mongodb";
 import { 
-  LayoutDashboard, Settings, Clock, 
-  CheckCircle2, Zap, Rocket, Globe, BarChart3, 
-  Send, Plus, Users, TrendingUp 
+  LayoutDashboard, Globe, BarChart3, 
+  Rocket, Clock, Zap, Send, TrendingUp 
 } from "lucide-react";
 import Composer from "@/components/Composer";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
+import { getUserAccounts } from "@/app/actions/account-actions";
 
-export default function Dashboard() {
-  // ఇది జస్ట్ సాంపుల్ డేటా, నీకు కావాలంటే DB నుండి తెచ్చుకోవచ్చు
+// హిస్టరీ డేటా తెచ్చే ఫంక్షన్
+async function getHistory(userId: string) {
+  const client = await clientPromise;
+  return await client.db("postjet").collection("posts")
+    .find({ userId })
+    .sort({ createdAt: -1 })
+    .limit(6)
+    .toArray();
+}
+
+export default async function DashboardPage() {
+  const { isAuthenticated, getUser } = getKindeServerSession();
+  if (!(await isAuthenticated())) redirect("/api/auth/login");
+  
+  const user = await getUser();
+  // డేటాబేస్ నుండి రియల్ అకౌంట్స్ మరియు హిస్టరీ తెస్తున్నాం
+  const [accounts, history] = await Promise.all([
+    getUserAccounts(),
+    getHistory(user?.id || "")
+  ]);
+
   const stats = [
-    { label: "Total Posts", value: "128", icon: <Send size={20}/>, color: "bg-blue-500" },
-    { label: "Reach", value: "12.4k", icon: <TrendingUp size={20}/>, color: "bg-purple-500" },
-    { label: "Platforms", value: "8", icon: <Globe size={20}/>, color: "bg-orange-500" },
+    { label: "Total Posts", value: history.length.toString(), icon: <Send size={20}/>, color: "bg-blue-500" },
+    { label: "Reach", value: "Active", icon: <TrendingUp size={20}/>, color: "bg-purple-500" },
+    { label: "Platforms", value: accounts.length.toString(), icon: <Globe size={20}/>, color: "bg-orange-500" },
   ];
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white flex font-sans overflow-hidden">
       
-      {/* 🚀 Sleek Sidebar */}
+      {/* 🚀 Futuristic Sidebar */}
       <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 flex flex-col p-8 sticky top-0 h-screen z-30">
         <div className="flex items-center gap-3 mb-16">
-          <motion.img 
-            animate={{ y: [0, -5, 0] }} 
-            transition={{ repeat: Infinity, duration: 2 }}
-            src="/logo.png" alt="PostJet" className="w-12" 
-          />
+          <img src="/logo.png" alt="PostJet" className="w-12" />
           <span className="font-black text-3xl italic tracking-tighter">
             Post<span className="text-blue-500">Jet</span>
           </span>
@@ -57,11 +72,9 @@ export default function Dashboard() {
         </div>
       </aside>
 
-      {/* 🌌 Main Content */}
+      {/* 🌌 Main Command Center */}
       <main className="flex-1 p-8 md:p-12 overflow-y-auto relative">
-        {/* Background Glows */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -mr-48 -mt-48" />
-        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 blur-[120px] rounded-full -ml-48 -mb-48" />
 
         <header className="mb-12 flex justify-between items-end relative z-10">
             <div>
@@ -81,18 +94,12 @@ export default function Dashboard() {
             </div>
         </header>
 
-        {/* 📟 The Glass Composer */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-16 relative z-10"
-        >
-          <div className="bg-slate-900/40 backdrop-blur-2xl border border-white/5 p-2 rounded-[3.5rem] shadow-2xl">
-             <Composer />
-          </div>
-        </motion.div>
+        {/* COMPOSER (Real Data లింక్ అయి ఉంటుంది) */}
+        <div className="mb-16 relative z-10">
+          <Composer connectedAccounts={accounts} />
+        </div>
 
-        {/* 🛰️ Recent Transmissions */}
+        {/* HISTORY LOGS */}
         <section className="relative z-10">
             <div className="flex items-center gap-4 mb-8">
               <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-slate-800" />
@@ -103,28 +110,25 @@ export default function Dashboard() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-               {[1, 2, 3].map((i) => (
-                 <motion.div 
-                   whileHover={{ y: -10 }}
-                   key={i} 
-                   className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-8 rounded-[2.5rem] group cursor-pointer hover:border-blue-500/50 transition-all"
-                 >
-                   <div className="flex justify-between items-start mb-6">
-                      <div className="flex gap-2">
-                         <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-                         <div className="w-2 h-2 rounded-full bg-purple-500" />
-                      </div>
-                      <Zap size={18} className="text-slate-700 group-hover:text-blue-500 transition-colors" />
-                   </div>
-                   <p className="text-slate-400 font-bold text-sm leading-relaxed mb-6 line-clamp-2">
-                     Waiting for new transmissions... Start a post to see your data here.
-                   </p>
-                   <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-600">
-                      <span>Live Post</span>
-                      <span className="flex items-center gap-1"><CheckCircle2 size={12} className="text-green-500"/> Success</span>
-                   </div>
-                 </motion.div>
-               ))}
+              {history.map((post: any) => (
+                <div key={post._id.toString()} className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-8 rounded-[2.5rem] group hover:border-blue-500/50 transition-all">
+                  <div className="flex justify-between items-start mb-6">
+                     <div className="flex gap-2">
+                        {post.platforms?.map((p: string) => (
+                          <div key={p} className="w-2 h-2 rounded-full bg-blue-500" title={p} />
+                        ))}
+                     </div>
+                     <Zap size={18} className="text-slate-700 group-hover:text-blue-500 transition-colors" />
+                  </div>
+                  <p className="text-slate-400 font-bold text-sm leading-relaxed mb-6 line-clamp-2">
+                    {post.content}
+                  </p>
+                  <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-600">
+                     <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                     <span className="flex items-center gap-1 text-green-500">Success</span>
+                  </div>
+                </div>
+              ))}
             </div>
         </section>
       </main>
