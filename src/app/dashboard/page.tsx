@@ -1,118 +1,130 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { redirect } from "next/navigation";
-import clientPromise from "@/lib/mongodb";
+"use client";
+import React from "react";
+import { motion } from "framer-motion";
 import { 
   LayoutDashboard, Settings, Clock, 
-  CheckCircle2, Zap, Rocket, Globe, BarChart3 
+  CheckCircle2, Zap, Rocket, Globe, BarChart3, 
+  Send, Plus, Users, TrendingUp 
 } from "lucide-react";
 import Composer from "@/components/Composer";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 
-async function getHistory(userId: string) {
-  const client = await clientPromise;
-  return await client.db("postjet").collection("posts").find({ userId }).sort({ createdAt: -1 }).limit(6).toArray();
-}
-
-export default async function Dashboard() {
-  const { isAuthenticated, getUser } = getKindeServerSession();
-  if (!(await isAuthenticated())) redirect("/api/auth/login");
-  const user = await getUser();
-  const history = await getHistory(user?.id || "");
+export default function Dashboard() {
+  // ఇది జస్ట్ సాంపుల్ డేటా, నీకు కావాలంటే DB నుండి తెచ్చుకోవచ్చు
+  const stats = [
+    { label: "Total Posts", value: "128", icon: <Send size={20}/>, color: "bg-blue-500" },
+    { label: "Reach", value: "12.4k", icon: <TrendingUp size={20}/>, color: "bg-purple-500" },
+    { label: "Platforms", value: "8", icon: <Globe size={20}/>, color: "bg-orange-500" },
+  ];
 
   return (
-    <div className="min-h-screen bg-[#F0F9FF] flex font-sans text-slate-900">
+    <div className="min-h-screen bg-[#0F172A] text-white flex font-sans overflow-hidden">
       
-      {/* SIDEBAR */}
-      <aside className="w-72 bg-white border-r border-blue-100 hidden xl:flex flex-col p-8 sticky top-0 h-screen z-20">
-        <div className="flex items-center gap-3 mb-12">
-          <img src="/logo.png" alt="PostJet" className="w-10" />
-          <span className="font-black text-2xl italic uppercase tracking-tighter text-slate-900">
-            Post<span className="text-blue-600">Jet</span>
+      {/* 🚀 Sleek Sidebar */}
+      <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 flex flex-col p-8 sticky top-0 h-screen z-30">
+        <div className="flex items-center gap-3 mb-16">
+          <motion.img 
+            animate={{ y: [0, -5, 0] }} 
+            transition={{ repeat: Infinity, duration: 2 }}
+            src="/logo.png" alt="PostJet" className="w-12" 
+          />
+          <span className="font-black text-3xl italic tracking-tighter">
+            Post<span className="text-blue-500">Jet</span>
           </span>
         </div>
         
-        <nav className="flex-1 space-y-3">
-          <p className="text-[10px] font-black uppercase text-slate-400 tracking-widest ml-4 mb-2">Menu</p>
-          <a href="#" className="flex items-center gap-4 bg-blue-600 text-white p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-100">
+        <nav className="flex-1 space-y-4">
+          <a href="#" className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-blue-500/20">
             <LayoutDashboard size={20} /> Dashboard
           </a>
-          <a href="/dashboard/accounts" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all">
+          <a href="/dashboard/accounts" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all">
             <Globe size={20} /> Connections
           </a>
-          <a href="#" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-blue-50 hover:text-blue-600 transition-all">
+          <a href="#" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all">
             <BarChart3 size={20} /> Analytics
           </a>
         </nav>
 
-        <div className="pt-8 border-t border-slate-100">
-           <div className="bg-slate-900 rounded-3xl p-5 mb-6 relative overflow-hidden group">
-              <Rocket className="absolute -right-2 -bottom-2 text-white/10 group-hover:scale-125 transition-transform" size={80} />
-              <p className="text-white font-black text-[10px] uppercase tracking-widest mb-1 relative z-10">Pro Plan</p>
-              <p className="text-blue-400 font-bold text-[9px] relative z-10">Unlimited Posting</p>
+        <div className="pt-8 border-t border-slate-800">
+           <div className="bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-3xl p-6 border border-blue-500/30 relative overflow-hidden mb-6">
+              <Rocket className="absolute -right-4 -bottom-4 text-blue-500/20 rotate-45" size={100} />
+              <p className="font-black text-[10px] uppercase tracking-widest text-blue-400 mb-1">Status</p>
+              <p className="text-xl font-black italic">PRO ACTIVE</p>
            </div>
-           <LogoutLink className="flex items-center gap-4 text-red-400 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-red-50 transition-all w-full">
+           <LogoutLink className="flex items-center gap-4 text-slate-500 p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:text-red-400 transition-all">
               Logout
            </LogoutLink>
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
-      <main className="flex-1 p-6 md:p-12 overflow-y-auto">
-        <header className="mb-12 flex justify-between items-center">
+      {/* 🌌 Main Content */}
+      <main className="flex-1 p-8 md:p-12 overflow-y-auto relative">
+        {/* Background Glows */}
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -mr-48 -mt-48" />
+        <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-600/10 blur-[120px] rounded-full -ml-48 -mb-48" />
+
+        <header className="mb-12 flex justify-between items-end relative z-10">
             <div>
-              <h2 className="text-4xl font-black tracking-tighter uppercase italic text-slate-900">Broadcast Hub</h2>
-              <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] mt-2">Welcome back, {user?.given_name} 🦾</p>
+              <p className="text-blue-400 font-black uppercase text-[10px] tracking-[0.4em] mb-2">Command Center</p>
+              <h2 className="text-5xl font-black tracking-tighter uppercase italic">Mission Control</h2>
             </div>
-            <div className="flex items-center gap-4 bg-white p-2 pr-6 rounded-3xl border border-blue-50 shadow-sm">
-                <img src={user?.picture || ""} className="w-12 h-12 rounded-2xl shadow-md border-2 border-white" />
-                <div>
-                   <p className="text-xs font-black uppercase tracking-tighter">{user?.given_name}</p>
-                   <p className="text-[9px] font-bold text-green-500 uppercase">Online</p>
-                </div>
+            <div className="flex gap-4">
+               {stats.map((stat) => (
+                 <div key={stat.label} className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-4 rounded-2xl min-w-[140px]">
+                    <div className="flex items-center justify-between mb-2">
+                       <span className="text-slate-500 font-black text-[9px] uppercase tracking-widest">{stat.label}</span>
+                       <div className={`${stat.color} p-1.5 rounded-lg text-white`}>{stat.icon}</div>
+                    </div>
+                    <p className="text-2xl font-black tracking-tighter">{stat.value}</p>
+                 </div>
+               ))}
             </div>
         </header>
 
-        {/* COMPOSER COMPONENT */}
-        <div className="mb-16">
-          <Composer />
-        </div>
+        {/* 📟 The Glass Composer */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-16 relative z-10"
+        >
+          <div className="bg-slate-900/40 backdrop-blur-2xl border border-white/5 p-2 rounded-[3.5rem] shadow-2xl">
+             <Composer />
+          </div>
+        </motion.div>
 
-        {/* HISTORY SECTION */}
-        <section>
-            <div className="flex justify-between items-center mb-8">
-              <h3 className="text-[10px] font-black uppercase text-slate-400 tracking-widest flex items-center gap-2">
-                <Clock size={16} className="text-blue-500" /> Recent Transmissions
+        {/* 🛰️ Recent Transmissions */}
+        <section className="relative z-10">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent to-slate-800" />
+              <h3 className="text-[11px] font-black uppercase text-slate-500 tracking-[0.3em] flex items-center gap-3">
+                <Clock size={16} className="text-blue-500" /> History Logs
               </h3>
-              <a href="#" className="text-[9px] font-black uppercase text-blue-600 hover:underline">View All History</a>
+              <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent to-slate-800" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {history.map((post: any) => (
-                <div key={post._id.toString()} className="bg-white p-8 rounded-[2.5rem] border border-blue-50 shadow-sm hover:shadow-xl transition-all group relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity">
-                     <Zap size={20} className="text-blue-600" />
-                  </div>
-                  <p className="text-sm font-bold text-slate-700 leading-relaxed line-clamp-3 mb-6">
-                    {post.content || "No text content"}
-                  </p>
-                  <div className="flex justify-between items-center pt-6 border-t border-slate-50">
-                    <div className="flex gap-2">
-                      {post.platforms?.map((p: string) => (
-                        <span key={p} className="w-2 h-2 rounded-full bg-blue-500" title={p}></span>
-                      ))}
-                    </div>
-                    <span className="text-[9px] font-black text-slate-300 uppercase">
-                      {new Date(post.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                </div>
-              ))}
-              
-              {history.length === 0 && (
-                <div className="col-span-full py-20 text-center bg-white rounded-[3rem] border-2 border-dashed border-blue-100">
-                   <p className="text-slate-300 font-black uppercase text-xs tracking-widest">No transmissions yet. Start your first jet!</p>
-                </div>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               {[1, 2, 3].map((i) => (
+                 <motion.div 
+                   whileHover={{ y: -10 }}
+                   key={i} 
+                   className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-8 rounded-[2.5rem] group cursor-pointer hover:border-blue-500/50 transition-all"
+                 >
+                   <div className="flex justify-between items-start mb-6">
+                      <div className="flex gap-2">
+                         <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                         <div className="w-2 h-2 rounded-full bg-purple-500" />
+                      </div>
+                      <Zap size={18} className="text-slate-700 group-hover:text-blue-500 transition-colors" />
+                   </div>
+                   <p className="text-slate-400 font-bold text-sm leading-relaxed mb-6 line-clamp-2">
+                     Waiting for new transmissions... Start a post to see your data here.
+                   </p>
+                   <div className="flex justify-between items-center text-[9px] font-black uppercase tracking-widest text-slate-600">
+                      <span>Live Post</span>
+                      <span className="flex items-center gap-1"><CheckCircle2 size={12} className="text-green-500"/> Success</span>
+                   </div>
+                 </motion.div>
+               ))}
             </div>
         </section>
       </main>
