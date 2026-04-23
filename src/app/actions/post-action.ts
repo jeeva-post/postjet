@@ -1,118 +1,117 @@
 "use server";
-
-import clientPromise from "@/lib/mongodb";
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { v2 as cloudinary } from "cloudinary";
 
-// --- Cloudinary Config (నీ వెర్సెల్ పేర్ల ప్రకారం) ---
+// Cloudinary Configuration
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_NAME,
   api_key: process.env.CLOUDINARY_KEY,
   api_secret: process.env.CLOUDINARY_SECRET,
 });
 
-// --- HELPER 1: Cloudinary Upload ---
-async function uploadToCloudinary(file: File) {
-  const arrayBuffer = await file.arrayBuffer();
-  const buffer = Buffer.from(arrayBuffer);
-  return new Promise((resolve, reject) => {
-    cloudinary.uploader.upload_stream({ resource_type: "auto" }, (error, result) => {
-      if (error) reject(error);
-      else resolve(result?.secure_url);
-    }).end(buffer);
-  });
-}
-
-// --- HELPER 2: Telegram (దీని పేరును 'postToTelegram' గా మార్చాను) ---
-async function postToTelegram(content: string, file: File) {
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-  if (!botToken || !chatId) return;
-
-  const fd = new FormData();
-  fd.append("chat_id", chatId);
-  fd.append("caption", content || "");
-  
-  if (file.type.startsWith("video/")) {
-    fd.append("video", file);
-    await fetch(`https://api.telegram.org/bot${botToken}/sendVideo`, { method: "POST", body: fd });
-  } else {
-    fd.append("photo", file);
-    await fetch(`https://api.telegram.org/bot${botToken}/sendPhoto`, { method: "POST", body: fd });
-  }
-}
-
-// --- HELPER 3: Instagram ---
-async function postToInstagram(content: string, mediaUrl: string, isVideo: boolean) {
-  const token = process.env.INSTAGRAM_ACCESS_TOKEN;
-  const accId = process.env.INSTAGRAM_ACCOUNT_ID;
-  if (!token || !accId) return;
-
-  const type = isVideo ? "VIDEO" : "IMAGE";
-  const param = isVideo ? "video_url" : "image_url";
-  
-  const res = await fetch(`https://graph.facebook.com/v19.0/${accId}/media?${param}=${encodeURIComponent(mediaUrl)}&caption=${encodeURIComponent(content)}&media_type=${type}&access_token=${token}`, { method: "POST" });
-  const data = await res.json();
-  if (data.id) {
-    await fetch(`https://graph.facebook.com/v19.0/${accId}/media_publish?creation_id=${data.id}&access_token=${token}`, { method: "POST" });
-  }
-}
-
-// --- HELPER 4: YouTube ---
-async function postToYouTube(content: string, file: File) {
-  const token = process.env.YOUTUBE_ACCESS_TOKEN;
-  if (!token || !file.type.startsWith("video/")) return;
-
-  const meta = { snippet: { title: content.slice(0, 100), description: content }, status: { privacyStatus: "public" } };
-  const fd = new FormData();
-  fd.append("metadata", new Blob([JSON.stringify(meta)], { type: "application/json" }));
-  fd.append("file", file);
-  await fetch("https://www.googleapis.com/upload/youtube/v3/videos?part=snippet,status", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}` },
-    body: fd
-  });
-}
-
-// --- MAIN ACTION (ఇది ప్లాట్‌ఫామ్‌లను ట్రిగ్గర్ చేస్తుంది) ---
-export async function postToAllPlatforms(formData: FormData): Promise<void> {
-  const { getUser } = getKindeServerSession();
-  const user = await getUser();
-  if (!user) return;
-
+export async function postToAllPlatforms(formData: FormData) {
   const content = formData.get("content") as string;
   const file = formData.get("media") as File;
-  const hasFile = file && file.size > 0;
+  const selected = JSON.parse(formData.get("selectedPlatforms") as string);
 
   let mediaUrl = "";
-  if (hasFile) {
-    mediaUrl = (await uploadToCloudinary(file)) as string;
+  let isVideo = file && file.type.startsWith("video");
+
+  // 1. Cloudinary Upload (మీడియా ఉంటేనే)
+  if (file && file.size > 0) {
+    const buffer = Buffer.from(await file.arrayBuffer());
+    mediaUrl = await new Promise((res, rej) => {
+      cloudinary.uploader.upload_stream(
+        { resource_type: "auto", folder: "postjet" },
+        (err, result) => {
+          if (err) rej(err);
+          else res(result?.secure_url || "");
+        }
+      ).end(buffer);
+    });
   }
 
   const tasks = [];
-  if (hasFile) {
-    // 1. Telegram
-    tasks.push(postToTelegram(content, file));
 
-    // 2. Instagram
-    if (process.env.INSTAGRAM_ACCESS_TOKEN && mediaUrl) {
-      tasks.push(postToInstagram(content, mediaUrl, file.type.startsWith("video/")));
-    }
-
-    // 3. YouTube (వీడియో అయితేనే)
-    if (file.type.startsWith("video/") && process.env.YOUTUBE_ACCESS_TOKEN) {
-      tasks.push(postToYouTube(content, file));
-    }
+  // --- 🔵 FACEBOOK ---
+  if (selected.includes("Facebook") && process.env.FACEBOOK_PAGE_ID) {
+    tasks.push(async () => {
+      const url = mediaUrl 
+        ? `https://graph.facebook.com/v19.0/${process.env.FACEBOOK_PAGE_ID}/photos?url=${encodeURIComponent(mediaUrl)}&message=${encodeURIComponent(content)}&access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`
+        : `https://graph.facebook.com/v19.0/${process.env.FACEBOOK_PAGE_ID}/feed?message=${encodeURIComponent(content)}&access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`;
+      
+      return fetch(url, { method: "POST" });
+    });
   }
 
-  await Promise.allSettled(tasks);
+  // --- 📸 INSTAGRAM ---
+  if (selected.includes("Instagram") && mediaUrl && process.env.INSTAGRAM_BUSINESS_ID) {
+    tasks.push(async () => {
+      // Step 1: Create Container
+      const type = isVideo ? "VIDEO" : "IMAGE";
+      const mediaParam = isVideo ? `video_url=${encodeURIComponent(mediaUrl)}&media_type=VIDEO` : `image_url=${encodeURIComponent(mediaUrl)}`;
+      
+      const res = await fetch(`https://graph.facebook.com/v19.0/${process.env.INSTAGRAM_BUSINESS_ID}/media?${mediaParam}&caption=${encodeURIComponent(content)}&access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`, { method: "POST" });
+      const data = await res.json();
+      
+      // Step 2: Publish
+      if (data.id) {
+        return fetch(`https://graph.facebook.com/v19.0/${process.env.INSTAGRAM_BUSINESS_ID}/media_publish?creation_id=${data.id}&access_token=${process.env.FACEBOOK_ACCESS_TOKEN}`, { method: "POST" });
+      }
+    });
+  }
 
-  // MongoDB లో హిస్టరీ సేవ్ చేయడం
-  const client = await clientPromise;
-  await client.db("postjet").collection("posts").insertOne({
-    userId: user.id,
-    content,
-    mediaUrl,
-    createdAt: new Date(),
-  });
+  // --- ✈️ TELEGRAM ---
+  if (selected.includes("Telegram") && process.env.TELEGRAM_BOT_TOKEN) {
+    tasks.push(async () => {
+      const method = mediaUrl ? (isVideo ? "sendVideo" : "sendPhoto") : "sendMessage";
+      const teleUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`;
+      
+      const body: any = { chat_id: process.env.TELEGRAM_CHAT_ID };
+      if (mediaUrl) {
+        body[isVideo ? "video" : "photo"] = mediaUrl;
+        body["caption"] = content;
+      } else {
+        body["text"] = content;
+      }
+
+      return fetch(teleUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+    });
+  }
+
+  // --- 🟢 WHATSAPP ---
+  if (selected.includes("WhatsApp") && process.env.WHATSAPP_PHONE_ID) {
+    tasks.push(async () => {
+      const waUrl = `https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_ID}/messages`;
+      const waBody: any = {
+        messaging_product: "whatsapp",
+        to: process.env.WHATSAPP_RECIPIENT_ID,
+        type: mediaUrl ? (isVideo ? "video" : "image") : "text",
+      };
+
+      if (mediaUrl) {
+        waBody[isVideo ? "video" : "image"] = { link: mediaUrl, caption: content };
+      } else {
+        waBody["text"] = { body: content };
+      }
+
+      return fetch(waUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${process.env.WHATSAPP_TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(waBody),
+      });
+    });
+  }
+
+  // Execute all tasks and wait for results
+  const results = await Promise.allSettled(tasks.map(task => task()));
+  console.log("Transmission Results:", results);
+  
+  return { success: true };
 }
