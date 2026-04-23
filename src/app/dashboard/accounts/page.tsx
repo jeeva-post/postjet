@@ -1,72 +1,111 @@
 import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
 import { redirect } from "next/navigation";
-import { CheckCircle2, PlusCircle, Link2 } from "lucide-react";
+import { 
+  Settings, User, Shield, Link as LinkIcon, 
+  CheckCircle2, AlertCircle, ChevronRight, LayoutDashboard 
+} from "lucide-react";
 
-// Brand Icons as SVGs (No dependency needed)
-const Icons = {
-  Telegram: () => (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>
-  ),
-  Instagram: () => (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#db2777" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="20" x="2" y="2" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" x2="17.51" y1="6.5" y2="6.5"/></svg>
-  ),
-  Facebook: () => (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#1d4ed8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/></svg>
-  ),
-  YouTube: () => (
-    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.94-2C18.88 4 12 4 12 4s-6.88 0-8.6.42a2.78 2.78 0 0 0-1.94 2C1 8.11 1 12 1 12s0 3.89.42 5.58a2.78 2.78 0 0 0 1.94 2c1.71.42 8.6.42 8.6.42s6.88 0 8.6-.42a2.78 2.78 0 0 0 1.94-2C23 15.89 23 12 23 12s0-3.89-.42-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg>
-  )
-};
+export default async function SettingsPage() {
+  const { isAuthenticated, getUser } = getKindeServerSession();
+  if (!(await isAuthenticated())) redirect("/api/auth/login");
+  const user = await getUser();
 
-export default async function AccountsPage() {
-  const { isAuthenticated } = getKindeServerSession();
-  if (!(await isAuthenticated())) {
-    redirect("/api/auth/login");
-  }
-
-  const platforms = [
-    { name: "Telegram", icon: <Icons.Telegram />, status: "Connected", desc: "Link your Bot or Channel" },
-    { name: "Instagram", icon: <Icons.Instagram />, status: "Not Connected", desc: "Post directly to your feed" },
-    { name: "Facebook", icon: <Icons.Facebook />, status: "Not Connected", desc: "Manage your FB pages" },
-    { name: "YouTube", icon: <Icons.YouTube />, status: "Not Connected", desc: "Upload shorts and videos" },
+  const connectedApps = [
+    { name: "Telegram", status: "Connected", iconColor: "text-[#0088cc]", bg: "bg-[#0088cc]10" },
+    { name: "Instagram", status: "Not Connected", iconColor: "text-[#E1306C]", bg: "bg-[#E1306C]10" },
+    { name: "YouTube", status: "Not Connected", iconColor: "text-[#FF0000]", bg: "bg-[#FF0000]10" },
+    { name: "Pinterest", status: "Connected", iconColor: "text-[#BD081C]", bg: "bg-[#BD081C]10" },
   ];
 
   return (
-    <div className="min-h-screen bg-white p-6 md:p-12 font-sans">
-      <header className="mb-12">
-        <div className="flex items-center gap-3 mb-4">
-            <div className="bg-blue-600 p-2 rounded-xl">
-                <Link2 className="text-white w-5 h-5" />
-            </div>
-            <h1 className="text-4xl font-black italic uppercase text-slate-900 tracking-tighter">Connections</h1>
+    <div className="min-h-screen bg-[#F8FAFC] flex font-sans text-slate-900">
+      {/* Sidebar */}
+      <aside className="w-72 bg-white border-r border-slate-200 hidden xl:flex flex-col p-8 sticky top-0 h-screen">
+        <div className="flex items-center gap-3 mb-12">
+          <div className="bg-blue-600 p-2 rounded-xl text-white shadow-lg italic font-black">PJ</div>
+          <span className="font-black text-xl italic uppercase tracking-tighter">PostJet</span>
         </div>
-        <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.2em]">Manage your social profiles</p>
-      </header>
+        <nav className="space-y-2">
+          <a href="/dashboard" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-slate-50 transition-all">
+            <LayoutDashboard size={20} /> Dashboard
+          </a>
+          <a href="/dashboard/accounts" className="flex items-center gap-4 bg-blue-600 text-white p-4 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-xl shadow-blue-100">
+            <Settings size={20} /> Settings
+          </a>
+        </nav>
+      </aside>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-        {platforms.map((p) => (
-          <div key={p.name} className="bg-slate-50 p-8 rounded-[2.5rem] border border-slate-100 transition-all">
-            <div className="flex justify-between items-start mb-8">
-              <div className="p-4 bg-white rounded-2xl shadow-sm">{p.icon}</div>
-              {p.status === "Connected" ? (
-                <div className="flex items-center gap-1.5 bg-green-100 text-green-700 px-3 py-1 rounded-full text-[9px] font-black uppercase">
-                  <CheckCircle2 size={10} /> Active
-                </div>
-              ) : (
-                <div className="bg-slate-200 text-slate-500 px-3 py-1 rounded-full text-[9px] font-black uppercase">Inactive</div>
-              )}
+      {/* Main Content */}
+      <main className="flex-1 p-6 md:p-12 overflow-y-auto">
+        <header className="mb-12">
+          <h2 className="text-4xl font-black tracking-tighter uppercase italic text-slate-900">Settings Center</h2>
+          <p className="text-slate-400 font-bold uppercase text-[10px] tracking-[0.3em] mt-3">Manage your profile and social connections</p>
+        </header>
+
+        <div className="max-w-4xl space-y-10">
+          {/* Section 1: Profile */}
+          <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div className="flex items-center gap-4 mb-8 border-b pb-6">
+                <div className="bg-orange-100 p-3 rounded-2xl text-orange-600"><User size={24}/></div>
+                <h3 className="font-black uppercase text-sm tracking-widest">Personal Account</h3>
             </div>
-            <h3 className="font-black text-2xl text-slate-900 mb-2 italic uppercase tracking-tighter">{p.name}</h3>
-            <p className="text-slate-400 text-[11px] mb-8 leading-relaxed">{p.desc}</p>
-            <button className={`w-full py-4 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
-              p.status === "Connected" ? "bg-white text-slate-300 border border-slate-200" : "bg-blue-600 text-white shadow-xl shadow-blue-500/20"
-            }`}>
-              {p.status === "Connected" ? "Connected" : <PlusCircle size={14} className="inline mr-2" />} 
-              {p.status !== "Connected" && "Connect Account"}
-            </button>
-          </div>
-        ))}
-      </div>
+            <div className="flex items-center gap-6">
+                <img src={user?.picture || ""} className="w-20 h-20 rounded-3xl border-4 border-slate-50 shadow-md" alt="Avatar" />
+                <div>
+                    <p className="text-xl font-black text-slate-900">{user?.given_name} {user?.family_name}</p>
+                    <p className="text-slate-400 font-bold text-sm">{user?.email}</p>
+                </div>
+                <button className="ml-auto bg-slate-50 text-slate-900 px-6 py-3 rounded-xl font-black text-[10px] uppercase border border-slate-200 hover:bg-slate-100">Edit</button>
+            </div>
+          </section>
+
+          {/* Section 2: Social Connections */}
+          <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div className="flex items-center gap-4 mb-8 border-b pb-6">
+                <div className="bg-blue-100 p-3 rounded-2xl text-blue-600"><LinkIcon size={24}/></div>
+                <h3 className="font-black uppercase text-sm tracking-widest">App Connections</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {connectedApps.map((app) => (
+                    <div key={app.name} className="flex items-center justify-between p-6 bg-slate-50 rounded-3xl border border-slate-100 group hover:border-blue-200 transition-all">
+                        <div className="flex items-center gap-4">
+                            <div className={`w-12 h-12 ${app.bg} ${app.iconColor} rounded-2xl flex items-center justify-center font-black italic shadow-sm`}>{app.name[0]}</div>
+                            <div>
+                                <p className="font-black text-sm">{app.name}</p>
+                                <p className={`text-[10px] font-bold uppercase tracking-widest ${app.status === 'Connected' ? 'text-green-500' : 'text-slate-400'}`}>{app.status}</p>
+                            </div>
+                        </div>
+                        <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-600" />
+                    </div>
+                ))}
+            </div>
+          </section>
+
+          {/* Section 3: API & Security */}
+          <section className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm">
+            <div className="flex items-center gap-4 mb-8 border-b pb-6">
+                <div className="bg-purple-100 p-3 rounded-2xl text-purple-600"><Shield size={24}/></div>
+                <h3 className="font-black uppercase text-sm tracking-widest">Developer Keys</h3>
+            </div>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between p-5 bg-slate-900 rounded-2xl text-white">
+                    <div className="flex items-center gap-3">
+                        <CheckCircle2 size={18} className="text-green-400" />
+                        <span className="font-bold text-[11px] uppercase tracking-widest">MongoDB Status</span>
+                    </div>
+                    <span className="text-[10px] font-black text-green-400">ACTIVE</span>
+                </div>
+                <div className="flex items-center justify-between p-5 bg-slate-900 rounded-2xl text-white opacity-80">
+                    <div className="flex items-center gap-3">
+                        <AlertCircle size={18} className="text-orange-400" />
+                        <span className="font-bold text-[11px] uppercase tracking-widest">Cloudinary Status</span>
+                    </div>
+                    <span className="text-[10px] font-black text-orange-400">CHECK KEYS</span>
+                </div>
+            </div>
+          </section>
+        </div>
+      </main>
     </div>
   );
 }
