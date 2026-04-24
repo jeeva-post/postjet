@@ -1,20 +1,21 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { linkAccount } from "../../../../actions/account-actions";
 
 export async function GET(
-  request: Request,
-  { params }: { params: { platform: string } }
+  request: NextRequest,
+  { params }: { params: Promise<{ platform: string }> }
 ) {
-  const { platform } = params;
+  // Next.js 15+ ప్రకారం params ని await చేయాలి
+  const { platform } = await params;
   const url = new URL(request.url);
   const code = url.searchParams.get('code');
 
   if (!code || !platform) {
-    return NextResponse.redirect(new URL('/dashboard/accounts?error=no_code', request.url));
+    return NextResponse.redirect(new URL('/dashboard/accounts?error=invalid_request', request.url));
   }
 
   let tokenData: any = {};
-  let accountName = `${platform.toUpperCase()} Profile`;
+  let accountName = `${platform.charAt(0).toUpperCase() + platform.slice(1)} Profile`;
 
   try {
     // --- 🔵 FACEBOOK & INSTAGRAM ---
@@ -48,23 +49,10 @@ export async function GET(
       tokenData = { token: data.access_token };
     }
 
-    // --- 🟠 REDDIT ---
-    if (platform === "reddit") {
-      const auth = Buffer.from(`${process.env.REDDIT_ID}:${process.env.REDDIT_SECRET}`).toString('base64');
-      const res = await fetch('https://www.reddit.com/api/v1/access_token', {
-        method: 'POST',
-        headers: { 'Authorization': `Basic ${auth}`, 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: `${url.origin}/api/auth/callback/reddit` }),
-      });
-      const data = await res.json();
-      tokenData = { token: data.access_token };
-    }
-
-    // --- 💾 SAVE TO DB ---
+    // --- 💾 DATABASE SAVING ---
     if (tokenData.token) {
-      const formattedPlatform = platform.charAt(0).toUpperCase() + platform.slice(1);
       await linkAccount({
-        platform: formattedPlatform,
+        platform: platform.charAt(0).toUpperCase() + platform.slice(1),
         accountName: accountName,
         config: tokenData
       });
@@ -72,7 +60,6 @@ export async function GET(
 
     return NextResponse.redirect(new URL('/dashboard/accounts?success=true', request.url));
   } catch (error) {
-    console.error("Auth Error:", error);
     return NextResponse.redirect(new URL('/dashboard/accounts?error=server_error', request.url));
   }
 }
