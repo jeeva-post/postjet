@@ -37,13 +37,11 @@ export async function GET(
     }
 
     if (tokenData.token) {
-      // DB లో సేవ్ అయ్యే వరకు వేచి ఉంటాం (await)
       await linkAccount({
         platform: platform.charAt(0).toUpperCase() + platform.slice(1),
-        accountName: `${platform.toUpperCase()} User`,
+        accountName: `${platform.toUpperCase()} Account`,
         config: tokenData
       });
-      // సేవ్ అయ్యాక కొంచెం గ్యాప్ ఇచ్చి డ్యాష్‌బోర్డ్‌కి పంపుతున్నాం
       return NextResponse.redirect(new URL('/dashboard/accounts?success=true', request.url));
     }
 

@@ -15,14 +15,13 @@ export async function POST(request: NextRequest) {
         { upsert: true }
       );
 
-      // టెలిగ్రామ్ లో యూజర్ కి రిప్లై పంపడం
       const botToken = process.env.TELEGRAM_BOT_TOKEN;
       await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           chat_id: chatId,
-          text: "✅ PostJet Connected! Click the button below to go back.",
+          text: "🚀 PostJet Connected! Click below to return.",
           reply_markup: {
             inline_keyboard: [[
               { text: "🔙 Back to Dashboard", url: "https://postjet.vercel.app/dashboard/accounts" }

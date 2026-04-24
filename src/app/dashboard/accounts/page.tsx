@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { CheckCircle2, Zap, RefreshCw } from "lucide-center";
+import { CheckCircle2, Zap, RefreshCcw } from "lucide-react"; // ఇక్కడ ఫిక్స్ చేశాను
 import { getUserAccounts } from "../../actions/account-actions";
 
 const PLATFORMS = [
@@ -27,9 +27,9 @@ export default function AccountsPage() {
   return (
     <div className="min-h-screen bg-[#0F172A] text-white p-12">
       <header className="mb-12 flex justify-between items-center">
-        <h2 className="text-5xl font-black italic uppercase tracking-tighter">Mission Control</h2>
+        <h2 className="text-5xl font-black italic uppercase tracking-tighter italic">Mission Control</h2>
         <button onClick={load} className="flex items-center gap-2 text-[10px] bg-blue-600 px-6 py-2 rounded-full font-black uppercase hover:scale-105 transition-all">
-          <RefreshCw size={12} className={syncing ? "animate-spin" : ""} /> {syncing ? "Syncing..." : "Sync Status"}
+          <RefreshCcw size={12} className={syncing ? "animate-spin" : ""} /> {syncing ? "Syncing..." : "Sync Status"}
         </button>
       </header>
 
@@ -40,7 +40,7 @@ export default function AccountsPage() {
             <div key={p.id} className="bg-slate-900/40 border border-slate-800 p-8 rounded-[2.5rem] flex items-center justify-between group hover:border-blue-500/50 transition-all shadow-xl">
               <div className="flex items-center gap-4">
                 <div className={`w-12 h-12 ${p.bg} ${p.color} rounded-2xl flex items-center justify-center text-xl font-black`}>{p.icon}</div>
-                <div><h4 className="text-sm font-black uppercase tracking-widest">{p.id}</h4><span className={`text-[8px] font-black uppercase ${isConnected ? 'text-green-400' : 'text-slate-500'}`}>{isConnected ? 'Active' : 'Offline'}</span></div>
+                <div><h4 className="text-sm font-black uppercase tracking-widest">{p.id}</h4><span className={`text-[8px] font-black uppercase ${isConnected ? 'text-green-400' : 'text-slate-500'}`}>{isConnected ? 'Connected' : 'Offline'}</span></div>
               </div>
               <button onClick={() => window.location.href = `/api/auth/social/${p.key}`} className={`p-3 rounded-xl transition-all ${isConnected ? 'bg-slate-800 text-slate-400' : 'bg-blue-600 text-white shadow-lg'}`}>
                 {isConnected ? <CheckCircle2 size={18}/> : <Zap size={18}/>}

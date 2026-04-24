@@ -17,12 +17,10 @@ export async function GET(
     case "facebook":
     case "instagram":
     case "whatsapp":
-      // నీ పాత సెట్టింగ్స్ - Scopes అలాగే ఉంచాను
       authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FB_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=pages_manage_posts,pages_read_engagement,pages_show_list,instagram_basic,instagram_content_publish,whatsapp_business_management,whatsapp_business_messaging`;
       break;
 
     case "linkedin":
-      // కొత్త Alphanumeric ID (86...) ఇక్కడ పనిచేస్తుంది
       authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LI_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=w_member_social`;
       break;
 
