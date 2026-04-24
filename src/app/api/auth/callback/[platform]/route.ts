@@ -15,15 +15,10 @@ export async function GET(
     let tokenData: any = {};
     let accountName = `${platform.toUpperCase()} User`;
 
-    if (platform === "facebook" || platform === "instagram") {
+    if (["facebook", "instagram", "whatsapp"].includes(platform)) {
       const res = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${url.origin}/api/auth/callback/${platform}&client_secret=${process.env.FACEBOOK_CLIENT_SECRET}&code=${code}`);
       const data = await res.json();
-      
-      const pages = await fetch(`https://graph.facebook.com/me/accounts?access_token=${data.access_token}`).then(r => r.json());
-      if (pages.data?.[0]) {
-        tokenData = { token: pages.data[0].access_token, pageId: pages.data[0].id };
-        accountName = pages.data[0].name;
-      }
+      tokenData = { token: data.access_token };
     }
 
     if (platform === "linkedin") {
@@ -43,11 +38,15 @@ export async function GET(
     }
 
     if (tokenData.token) {
-      await linkAccount({ platform: platform.charAt(0).toUpperCase() + platform.slice(1), accountName, config: tokenData });
+      await linkAccount({
+        platform: platform.charAt(0).toUpperCase() + platform.slice(1),
+        accountName: accountName,
+        config: tokenData
+      });
     }
 
     return NextResponse.redirect(new URL('/dashboard/accounts?success=true', request.url));
   } catch (error) {
-    return NextResponse.redirect(new URL('/dashboard/accounts?error=sync_failed', request.url));
+    return NextResponse.redirect(new URL('/dashboard/accounts?error=server_error', request.url));
   }
 }

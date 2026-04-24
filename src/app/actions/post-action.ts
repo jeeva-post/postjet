@@ -10,41 +10,32 @@ export async function postToAllPlatforms(formData: FormData) {
 
   const client = await clientPromise;
   const db = client.db("postjet");
-  const userAccounts = await db.collection("accounts").find({ userId: user?.id }).toArray();
+  const accounts = await db.collection("accounts").find({ userId: user?.id }).toArray();
 
   const tasks = [];
-
   for (const p of selected) {
-    const acc = userAccounts.find(a => a.platform === p);
-    
-    // --- 🔵 FACEBOOK ---
-    if (p === "Facebook" && acc) {
-      tasks.push(fetch(`https://graph.facebook.com/v19.0/${acc.config.pageId}/feed?message=${encodeURIComponent(content)}&access_token=${acc.config.token}`, { method: "POST" }));
+    const acc = accounts.find(a => a.platform === p);
+    if (!acc && p !== "WhatsApp" && p !== "Telegram") continue;
+
+    if ((p === "Facebook" || p === "Instagram") && acc) {
+      tasks.push(fetch(`https://graph.facebook.com/v19.0/${acc.config.pageId || acc.config.id}/feed?message=${encodeURIComponent(content)}&access_token=${acc.config.token}`, { method: "POST" }));
     }
 
-    // --- ✈️ TELEGRAM ---
     if (p === "Telegram") {
-      const botToken = process.env.TELEGRAM_BOT_TOKEN;
-      const chatId = acc?.config?.chatId || process.env.TELEGRAM_CHAT_ID;
-      tasks.push(fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+      tasks.push(fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text: content })
+        body: JSON.stringify({ chat_id: process.env.TELEGRAM_CHAT_ID, text: content })
       }));
     }
 
-    // --- 🟢 WHATSAPP ---
     if (p === "WhatsApp") {
-      const waToken = process.env.WHATSAPP_TOKEN;
-      const phoneId = process.env.WHATSAPP_PHONE_ID;
-      const recipient = acc?.config?.id || process.env.WHATSAPP_RECIPIENT_ID;
-      
-      tasks.push(fetch(`https://graph.facebook.com/v19.0/${phoneId}/messages`, {
+      tasks.push(fetch(`https://graph.facebook.com/v19.0/${process.env.WHATSAPP_PHONE_ID}/messages`, {
         method: "POST",
-        headers: { "Authorization": `Bearer ${waToken}`, "Content-Type": "application/json" },
+        headers: { "Authorization": `Bearer ${process.env.WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
         body: JSON.stringify({
           messaging_product: "whatsapp",
-          to: recipient,
+          to: process.env.WHATSAPP_RECIPIENT_ID,
           type: "text",
           text: { body: content }
         })
