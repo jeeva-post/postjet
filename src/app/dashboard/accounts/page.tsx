@@ -3,12 +3,11 @@ import React, { useState, useEffect } from "react";
 import { Globe, CheckCircle2, Zap } from "lucide-react";
 import { getUserAccounts } from "../../actions/account-actions";
 
-const APPS = [
+const PLATFORMS = [
   { id: "Facebook", key: "facebook", icon: "f", color: "text-[#1877F2]", bg: "bg-[#1877F2]/10" },
   { id: "Instagram", key: "instagram", icon: "i", color: "text-[#E1306C]", bg: "bg-[#E1306C]/10" },
   { id: "LinkedIn", key: "linkedin", icon: "l", color: "text-[#0077B5]", bg: "bg-[#0077B5]/10" },
   { id: "Telegram", key: "telegram", icon: "t", color: "text-[#0088cc]", bg: "bg-[#0088cc]/10" },
-  { id: "Reddit", key: "reddit", icon: "r", color: "text-[#FF4500]", bg: "bg-[#FF4500]/10" },
 ];
 
 export default function AccountsPage() {
@@ -20,9 +19,9 @@ export default function AccountsPage() {
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white p-12">
-      <header className="mb-12"><h2 className="text-5xl font-black italic uppercase tracking-tighter">Connections</h2></header>
+      <header className="mb-12"><h2 className="text-5xl font-black italic uppercase tracking-tighter italic">Mission Control</h2></header>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {APPS.map((p) => {
+        {PLATFORMS.map((p) => {
           const isConnected = accounts.some(acc => acc.platform.toLowerCase() === p.key);
           return (
             <div key={p.id} className="bg-slate-900/40 border border-slate-800 p-8 rounded-[2.5rem] flex items-center justify-between group hover:border-blue-500/50 transition-all">
