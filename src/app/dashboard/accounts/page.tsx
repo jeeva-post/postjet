@@ -3,8 +3,7 @@ import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   Globe, Shield, LayoutDashboard, 
-  X, CheckCircle2, AlertCircle, 
-  Zap, Link as LinkIcon 
+  X, CheckCircle2, Zap, Link as LinkIcon 
 } from "lucide-react";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
 import { linkAccount, getUserAccounts } from "../../actions/account-actions";
@@ -25,7 +24,19 @@ export default function AccountsPage() {
 
   useEffect(() => { loadAccounts(); }, []);
 
-  const handleConnect = async () => {
+  const handleConnectClick = (platform: string) => {
+    if (platform === "LinkedIn") {
+      // LinkedIn OAuth Redirect
+      const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
+      const redirectUri = encodeURIComponent("https://postjet.vercel.app/api/auth/callback/linkedin");
+      window.location.href = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=w_member_social`;
+    } else {
+      setSelectedPlatform(platform);
+      setIsModalOpen(true);
+    }
+  };
+
+  const handleManualConnect = async () => {
     setLoading(true);
     try {
       await linkAccount({
@@ -40,14 +51,15 @@ export default function AccountsPage() {
   };
 
   const platforms = [
-    { id: "Telegram", icon: "T", color: "text-blue-400", bg: "bg-blue-500/10" },
-    { id: "WhatsApp", icon: "W", color: "text-green-400", bg: "bg-green-500/10" },
-    { id: "Facebook", icon: "F", color: "text-blue-600", bg: "bg-blue-600/10" },
-    { id: "Instagram", icon: "I", color: "text-pink-500", bg: "bg-pink-500/10" },
+    { id: "LinkedIn", icon: "L", color: "text-blue-500", bg: "bg-blue-500/10", type: "oauth" },
+    { id: "Telegram", icon: "T", color: "text-blue-400", bg: "bg-blue-500/10", type: "manual" },
+    { id: "WhatsApp", icon: "W", color: "text-green-400", bg: "bg-green-500/10", type: "manual" },
+    { id: "Facebook", icon: "F", color: "text-blue-600", bg: "bg-blue-600/10", type: "oauth" },
   ];
 
   return (
     <div className="min-h-screen bg-[#0F172A] text-white flex font-sans overflow-hidden">
+      {/* Sidebar */}
       <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 flex flex-col p-8 sticky top-0 h-screen z-30">
         <div className="flex items-center gap-3 mb-16">
           <img src="/logo.png" alt="PostJet" className="w-12" />
@@ -66,6 +78,7 @@ export default function AccountsPage() {
         </div>
       </aside>
 
+      {/* Main Content */}
       <main className="flex-1 p-8 md:p-12 overflow-y-auto relative text-white">
         <header className="mb-12 relative z-10">
           <p className="text-blue-400 font-black uppercase text-[10px] tracking-[0.4em] mb-2">Systems</p>
@@ -84,12 +97,18 @@ export default function AccountsPage() {
                     <p className={`text-[10px] font-black uppercase tracking-widest ${isConnected ? 'text-green-500' : 'text-slate-500'}`}>{isConnected ? 'Sync Active' : 'Offline'}</p>
                   </div>
                 </div>
-                <button onClick={() => { setSelectedPlatform(p.id); setIsModalOpen(true); }} className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${isConnected ? 'bg-slate-800 text-slate-400' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:scale-105'}`}>{isConnected ? 'Update' : 'Connect'}</button>
+                <button 
+                  onClick={() => handleConnectClick(p.id)} 
+                  className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${isConnected ? 'bg-slate-800 text-slate-400' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:scale-105'}`}
+                >
+                  {isConnected ? 'Update' : p.type === 'oauth' ? 'Login to Connect' : 'Connect'}
+                </button>
               </div>
             );
           })}
         </section>
 
+        {/* Manual Connection Modal (Only for Telegram/WhatsApp) */}
         <AnimatePresence>
           {isModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
@@ -112,7 +131,7 @@ export default function AccountsPage() {
                       <input type="text" placeholder="Access Token" onChange={(e) => setConfig({...config, token: e.target.value})} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none" />
                     </>
                   )}
-                  <button onClick={handleConnect} disabled={loading} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white">{loading ? "Establishing Link..." : "Finalize Connection"}</button>
+                  <button onClick={handleManualConnect} disabled={loading} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white">{loading ? "Establishing Link..." : "Finalize Connection"}</button>
                 </div>
               </motion.div>
             </div>
