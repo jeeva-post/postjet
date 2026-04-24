@@ -9,7 +9,7 @@ export async function GET(
   const callbackUrl = `${origin}/api/auth/callback/${platform}`;
   
   const FB_ID = process.env.FACEBOOK_CLIENT_ID; 
-  const LI_ID = process.env.LINKEDIN_CLIENT_ID; // ఇక్కడ నీ కొత్త '86...' ఐడి పనిచేస్తుంది
+  const LI_ID = process.env.LINKEDIN_CLIENT_ID; 
 
   let authUrl = "";
 
@@ -17,15 +17,17 @@ export async function GET(
     case "facebook":
     case "instagram":
     case "whatsapp":
+      // నీ పాత సెట్టింగ్స్ (Same Scopes)
       authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FB_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=pages_manage_posts,pages_read_engagement,pages_show_list,instagram_basic,instagram_content_publish,whatsapp_business_management,whatsapp_business_messaging`;
       break;
 
     case "linkedin":
-      // LinkedIn OAuth URL with Client ID
+      // LinkedIn with new alphanumeric ID
       authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LI_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=w_member_social`;
       break;
 
     case "telegram":
+      // టెలిగ్రామ్ ని డైరెక్ట్ గా బాట్ లోపలికి పంపిస్తున్నాం
       authUrl = `https://t.me/PostJetBot?start=auth_${Date.now()}`;
       break;
 

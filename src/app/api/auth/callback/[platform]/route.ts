@@ -15,7 +15,6 @@ export async function GET(
     let tokenData: any = {};
     let accountName = `${platform.toUpperCase()} User`;
 
-    // --- 🔵 LinkedIn Token Exchange (The Winner!) ---
     if (platform === "linkedin") {
       const res = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
@@ -29,12 +28,9 @@ export async function GET(
         }),
       });
       const data = await res.json();
-      if (data.access_token) {
-        tokenData = { token: data.access_token };
-      }
+      if (data.access_token) tokenData = { token: data.access_token };
     }
 
-    // --- 🔴 Meta (FB, Insta) - Keep as is ---
     if (["facebook", "instagram", "whatsapp"].includes(platform)) {
       const res = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${url.origin}/api/auth/callback/${platform}&client_secret=${process.env.FACEBOOK_CLIENT_SECRET}&code=${code}`);
       const data = await res.json();
@@ -42,7 +38,6 @@ export async function GET(
     }
 
     if (tokenData.token) {
-      // డేటాబేస్ అప్‌డేట్ -> ఇది సక్సెస్ అయితేనే 'Active' అని వస్తుంది
       await linkAccount({
         platform: platform.charAt(0).toUpperCase() + platform.slice(1),
         accountName,
@@ -51,8 +46,8 @@ export async function GET(
       return NextResponse.redirect(new URL('/dashboard/accounts?success=true', request.url));
     }
 
-    return NextResponse.redirect(new URL('/dashboard/accounts?error=sync_failed', request.url));
+    return NextResponse.redirect(new URL('/dashboard/accounts?error=failed', request.url));
   } catch (error) {
-    return NextResponse.redirect(new URL('/dashboard/accounts?error=server_error', request.url));
+    return NextResponse.redirect(new URL('/dashboard/accounts?error=error', request.url));
   }
 }
