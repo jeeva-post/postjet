@@ -1,68 +1,52 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Globe, Shield, LayoutDashboard, 
-  X, CheckCircle2, Zap, Link as LinkIcon 
-} from "lucide-react";
+import { Globe, LayoutDashboard, CheckCircle2, Zap, ShieldCheck } from "lucide-react";
 import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import { linkAccount, getUserAccounts } from "../../actions/account-actions";
+import { getUserAccounts } from "../../actions/account-actions";
+
+const PLATFORMS = [
+  { id: "Facebook", icon: "f", color: "text-[#1877F2]", bg: "bg-[#1877F2]/10" },
+  { id: "Instagram", icon: "i", color: "text-[#E1306C]", bg: "bg-[#E1306C]/10" },
+  { id: "LinkedIn", icon: "l", color: "text-[#0077B5]", bg: "bg-[#0077B5]/10" },
+  { id: "X", icon: "x", color: "text-white", bg: "bg-white/10" },
+  { id: "Telegram", icon: "t", color: "text-[#0088cc]", bg: "bg-[#0088cc]/10" },
+  { id: "WhatsApp", icon: "w", color: "text-[#25D366]", bg: "bg-[#25D366]/10" },
+  { id: "Reddit", icon: "r", color: "text-[#FF4500]", bg: "bg-[#FF4500]/10" },
+  { id: "YouTube", icon: "y", color: "text-[#FF0000]", bg: "bg-[#FF0000]/10" },
+  { id: "TikTok", icon: "tk", color: "text-white", bg: "bg-white/10" },
+  { id: "Pinterest", icon: "p", color: "text-[#BD081C]", bg: "bg-[#BD081C]/10" },
+  { id: "Snapchat", icon: "s", color: "text-[#FFFC00]", bg: "bg-[#FFFC00]/10" },
+];
 
 export default function AccountsPage() {
   const [accounts, setAccounts] = useState<any[]>([]);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPlatform, setSelectedPlatform] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [config, setConfig] = useState<any>({});
 
-  const loadAccounts = async () => {
-    try {
-      const data = await getUserAccounts();
-      setAccounts(data);
-    } catch (e) { console.error(e); }
-  };
+  useEffect(() => {
+    const load = async () => { setAccounts(await getUserAccounts()); };
+    load();
+  }, []);
 
-  useEffect(() => { loadAccounts(); }, []);
+  const handleConnect = (platform: string) => {
+    const baseUrl = "https://postjet.vercel.app/api/auth/callback";
+    const authUrls: any = {
+      Facebook: `https://www.facebook.com/v19.0/dialog/oauth?client_id=${process.env.NEXT_PUBLIC_FB_APP_ID}&redirect_uri=${baseUrl}/facebook&scope=pages_manage_posts,pages_read_engagement`,
+      LinkedIn: `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID}&redirect_uri=${baseUrl}/linkedin&scope=w_member_social`,
+      Reddit: `https://www.reddit.com/api/v1/authorize?client_id=${process.env.NEXT_PUBLIC_REDDIT_ID}&response_type=code&state=pj&redirect_uri=${baseUrl}/reddit&duration=permanent&scope=submit`,
+      // ఇతర యాప్స్ కి కూడా ఇదే విధంగా URL లు యాడ్ చేసుకోవచ్చు
+    };
 
-  const handleConnectClick = (platform: string) => {
-    if (platform === "LinkedIn") {
-      // LinkedIn OAuth Redirect
-      const clientId = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
-      const redirectUri = encodeURIComponent("https://postjet.vercel.app/api/auth/callback/linkedin");
-      window.location.href = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${clientId}&redirect_uri=${redirectUri}&scope=w_member_social`;
+    if (authUrls[platform]) {
+      window.location.href = authUrls[platform];
     } else {
-      setSelectedPlatform(platform);
-      setIsModalOpen(true);
+      alert(`${platform} integration is coming soon in the next update!`);
     }
   };
 
-  const handleManualConnect = async () => {
-    setLoading(true);
-    try {
-      await linkAccount({
-        platform: selectedPlatform,
-        accountName: `${selectedPlatform} Account`,
-        config: config
-      });
-      setIsModalOpen(false);
-      loadAccounts();
-    } catch (err) { alert("Connection Failed."); }
-    setLoading(false);
-  };
-
-  const platforms = [
-    { id: "LinkedIn", icon: "L", color: "text-blue-500", bg: "bg-blue-500/10", type: "oauth" },
-    { id: "Telegram", icon: "T", color: "text-blue-400", bg: "bg-blue-500/10", type: "manual" },
-    { id: "WhatsApp", icon: "W", color: "text-green-400", bg: "bg-green-500/10", type: "manual" },
-    { id: "Facebook", icon: "F", color: "text-blue-600", bg: "bg-blue-600/10", type: "oauth" },
-  ];
-
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white flex font-sans overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 flex flex-col p-8 sticky top-0 h-screen z-30">
+    <div className="min-h-screen bg-[#0F172A] text-white flex overflow-hidden">
+      {/* Sidebar - Same Design */}
+      <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 p-8 sticky top-0 h-screen z-30">
         <div className="flex items-center gap-3 mb-16">
-          <img src="/logo.png" alt="PostJet" className="w-12" />
           <span className="font-black text-3xl italic tracking-tighter">Post<span className="text-blue-500">Jet</span></span>
         </div>
         <nav className="flex-1 space-y-4">
@@ -78,65 +62,38 @@ export default function AccountsPage() {
         </div>
       </aside>
 
-      {/* Main Content */}
-      <main className="flex-1 p-8 md:p-12 overflow-y-auto relative text-white">
+      {/* Main Grid */}
+      <main className="flex-1 p-12 overflow-y-auto relative">
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-600/10 blur-[120px] rounded-full -mr-48 -mt-48" />
         <header className="mb-12 relative z-10">
           <p className="text-blue-400 font-black uppercase text-[10px] tracking-[0.4em] mb-2">Systems</p>
-          <h2 className="text-5xl font-black tracking-tighter uppercase italic">App Linkage</h2>
+          <h2 className="text-5xl font-black tracking-tighter uppercase italic">Global Linkage</h2>
         </header>
 
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
-          {platforms.map((p) => {
+        <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 relative z-10">
+          {PLATFORMS.map((p) => {
             const isConnected = accounts.some(acc => acc.platform === p.id);
             return (
-              <div key={p.id} className="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-8 rounded-[2.5rem] flex items-center justify-between group">
-                <div className="flex items-center gap-6">
-                  <div className={`w-16 h-16 ${p.bg} ${p.color} rounded-[1.5rem] flex items-center justify-center text-2xl font-black shadow-inner`}>{p.icon}</div>
+              <div key={p.id} className="bg-slate-900/40 backdrop-blur-md border border-slate-800 p-6 rounded-[2.5rem] flex items-center justify-between group hover:border-blue-500/50 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 ${p.bg} ${p.color} rounded-2xl flex items-center justify-center text-xl font-black`}>{p.icon}</div>
                   <div>
-                    <h4 className="text-lg font-black tracking-tight">{p.id}</h4>
-                    <p className={`text-[10px] font-black uppercase tracking-widest ${isConnected ? 'text-green-500' : 'text-slate-500'}`}>{isConnected ? 'Sync Active' : 'Offline'}</p>
+                    <h4 className="text-sm font-black uppercase tracking-tight">{p.id}</h4>
+                    <span className={`text-[8px] font-black uppercase tracking-[0.2em] ${isConnected ? 'text-green-500' : 'text-slate-500'}`}>
+                      {isConnected ? 'Active' : 'Not Linked'}
+                    </span>
                   </div>
                 </div>
                 <button 
-                  onClick={() => handleConnectClick(p.id)} 
-                  className={`px-6 py-3 rounded-xl font-black text-[10px] uppercase tracking-widest transition-all ${isConnected ? 'bg-slate-800 text-slate-400' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:scale-105'}`}
+                  onClick={() => handleConnect(p.id)}
+                  className={`p-3 rounded-xl transition-all ${isConnected ? 'bg-slate-800 text-slate-400' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:scale-110'}`}
                 >
-                  {isConnected ? 'Update' : p.type === 'oauth' ? 'Login to Connect' : 'Connect'}
+                  {isConnected ? <CheckCircle2 size={18}/> : <Zap size={18}/>}
                 </button>
               </div>
             );
           })}
         </section>
-
-        {/* Manual Connection Modal (Only for Telegram/WhatsApp) */}
-        <AnimatePresence>
-          {isModalOpen && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center p-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsModalOpen(false)} className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-              <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="bg-slate-900 border border-white/10 p-10 rounded-[3rem] w-full max-w-lg relative z-10 shadow-2xl">
-                <div className="flex justify-between items-center mb-8">
-                  <h3 className="text-2xl font-black uppercase text-blue-500">Connect {selectedPlatform}</h3>
-                  <button onClick={() => setIsModalOpen(false)} className="text-white"><X /></button>
-                </div>
-                <div className="space-y-6">
-                  {selectedPlatform === "Telegram" && (
-                    <>
-                      <input type="text" placeholder="Bot Token" onChange={(e) => setConfig({...config, botToken: e.target.value})} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none" />
-                      <input type="text" placeholder="Chat ID" onChange={(e) => setConfig({...config, chatId: e.target.value})} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none" />
-                    </>
-                  )}
-                  {selectedPlatform === "WhatsApp" && (
-                    <>
-                      <input type="text" placeholder="Phone ID" onChange={(e) => setConfig({...config, phoneId: e.target.value})} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none" />
-                      <input type="text" placeholder="Access Token" onChange={(e) => setConfig({...config, token: e.target.value})} className="w-full bg-white/5 border border-white/10 p-5 rounded-2xl text-white outline-none" />
-                    </>
-                  )}
-                  <button onClick={handleManualConnect} disabled={loading} className="w-full bg-blue-600 py-5 rounded-2xl font-black uppercase text-xs tracking-widest text-white">{loading ? "Establishing Link..." : "Finalize Connection"}</button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
       </main>
     </div>
   );
