@@ -9,7 +9,7 @@ export async function GET(
   const callbackUrl = `${origin}/api/auth/callback/${platform}`;
   
   const FB_ID = process.env.FACEBOOK_CLIENT_ID; 
-  const LI_ID = process.env.LINKEDIN_CLIENT_ID;
+  const LI_ID = process.env.LINKEDIN_CLIENT_ID; // ఇక్కడ నీ కొత్త '86...' ఐడి పనిచేస్తుంది
 
   let authUrl = "";
 
@@ -21,12 +21,11 @@ export async function GET(
       break;
 
     case "linkedin":
-      // గుర్తుంచుకో జీవన్: LI_ID కచ్చితంగా '78...' తో మొదలయ్యే అక్షరాలు ఉండాలి
+      // LinkedIn OAuth URL with Client ID
       authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LI_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=w_member_social`;
       break;
 
     case "telegram":
-      // టెలిగ్రామ్ ని మన బాట్ లింక్ కి పంపిస్తున్నాం
       authUrl = `https://t.me/PostJetBot?start=auth_${Date.now()}`;
       break;
 
