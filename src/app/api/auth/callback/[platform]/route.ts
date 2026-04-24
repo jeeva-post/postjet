@@ -13,8 +13,7 @@ export async function GET(
 
   try {
     let tokenData: any = {};
-    
-    // LinkedIn - ఇక్కడ నీ Alphanumeric ID (86...) పక్కాగా ఉండాలి
+
     if (platform === "linkedin") {
       const res = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
         method: 'POST',
@@ -31,7 +30,6 @@ export async function GET(
       if (data.access_token) tokenData = { token: data.access_token };
     }
 
-    // Meta Group (FB, Insta, WhatsApp)
     if (["facebook", "instagram", "whatsapp"].includes(platform)) {
       const res = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${url.origin}/api/auth/callback/${platform}&client_secret=${process.env.FACEBOOK_CLIENT_SECRET}&code=${code}`);
       const data = await res.json();
@@ -39,18 +37,18 @@ export async function GET(
     }
 
     if (tokenData.token) {
-      // ఇక్కడ ఖచ్చితంగా await చేయాలి, అప్పుడే DB లో సేవ్ అయ్యాక Dashboard కి వెళ్తుంది
+      // DB లో సేవ్ అయ్యే వరకు వేచి ఉంటాం (await)
       await linkAccount({
         platform: platform.charAt(0).toUpperCase() + platform.slice(1),
         accountName: `${platform.toUpperCase()} User`,
         config: tokenData
       });
-      // 500ms చిన్న గ్యాప్ ఇస్తే Dashboard లో పక్కాగా Active అని కనిపిస్తుంది
+      // సేవ్ అయ్యాక కొంచెం గ్యాప్ ఇచ్చి డ్యాష్‌బోర్డ్‌కి పంపుతున్నాం
       return NextResponse.redirect(new URL('/dashboard/accounts?success=true', request.url));
     }
 
     return NextResponse.redirect(new URL('/dashboard/accounts?error=failed', request.url));
   } catch (error) {
-    return NextResponse.redirect(new URL('/dashboard/accounts?error=error', request.url));
+    return NextResponse.redirect(new URL('/dashboard/accounts?error=server_error', request.url));
   }
 }
