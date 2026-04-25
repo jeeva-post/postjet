@@ -2,13 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: 250 249 246; /* Milky White */
-  --foreground: 15 23 42;    /* Slate 900 */
-}
-
 body {
-  background-color: rgb(250, 249, 246);
-  color: rgb(15, 23, 42);
+  background-color: #FAF9F6 !important; /* Milky White */
+  color: #0F172A;
   font-family: 'Inter', sans-serif;
 }
