@@ -14,22 +14,6 @@ export async function GET(
   try {
     let tokenData: any = {};
 
-    if (platform === "linkedin") {
-      const res = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-        body: new URLSearchParams({
-          grant_type: 'authorization_code',
-          code,
-          client_id: process.env.LINKEDIN_CLIENT_ID!,
-          client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
-          redirect_uri: `${url.origin}/api/auth/callback/linkedin`,
-        }),
-      });
-      const data = await res.json();
-      if (data.access_token) tokenData = { token: data.access_token };
-    }
-
     if (["facebook", "instagram", "whatsapp"].includes(platform)) {
       const res = await fetch(`https://graph.facebook.com/v19.0/oauth/access_token?client_id=${process.env.FACEBOOK_CLIENT_ID}&redirect_uri=${url.origin}/api/auth/callback/${platform}&client_secret=${process.env.FACEBOOK_CLIENT_SECRET}&code=${code}`);
       const data = await res.json();
@@ -37,9 +21,10 @@ export async function GET(
     }
 
     if (tokenData.token) {
+      // DB లో అకౌంట్ ని లింక్ చేస్తున్నాం
       await linkAccount({
         platform: platform.charAt(0).toUpperCase() + platform.slice(1),
-        accountName: `${platform.toUpperCase()} Account`,
+        accountName: `${platform.toUpperCase()} User`,
         config: tokenData
       });
       return NextResponse.redirect(new URL('/dashboard/accounts?success=true', request.url));

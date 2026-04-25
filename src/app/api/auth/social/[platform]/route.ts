@@ -9,7 +9,6 @@ export async function GET(
   const callbackUrl = `${origin}/api/auth/callback/${platform}`;
   
   const FB_ID = process.env.FACEBOOK_CLIENT_ID; 
-  const LI_ID = process.env.LINKEDIN_CLIENT_ID; 
 
   let authUrl = "";
 
@@ -20,14 +19,7 @@ export async function GET(
       authUrl = `https://www.facebook.com/v19.0/dialog/oauth?client_id=${FB_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=pages_manage_posts,pages_read_engagement,pages_show_list,instagram_basic,instagram_content_publish,whatsapp_business_management,whatsapp_business_messaging`;
       break;
 
-    case "linkedin":
-      authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${LI_ID}&redirect_uri=${encodeURIComponent(callbackUrl)}&scope=w_member_social`;
-      break;
-
-    case "telegram":
-      authUrl = `https://t.me/PostJetBot?start=auth_${Date.now()}`;
-      break;
-
+    // LinkedIn & Telegram ప్రస్తుతానికి డ్యాష్‌బోర్డ్‌లో డిసేబుల్ చేశాం కాబట్టి ఇక్కడ లాజిక్ అవసరం లేదు
     default:
       return NextResponse.redirect(new URL('/dashboard/accounts', request.url));
   }
