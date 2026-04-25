@@ -3,13 +3,12 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 15, 23, 42; /* Slate 900 for text */
-  --background-start-rgb: 250, 249, 246; /* Milky White */
-  --background-end-rgb: 250, 249, 246;
+  --background: 250 249 246; /* Milky White */
+  --foreground: 15 23 42;    /* Slate 900 */
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: rgb(var(--background-start-rgb));
-  font-feature-settings: "liga" 0;
+  background-color: rgb(250, 249, 246);
+  color: rgb(15, 23, 42);
+  font-family: 'Inter', sans-serif;
 }
