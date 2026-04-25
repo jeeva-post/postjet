@@ -5,33 +5,37 @@ export async function generateAICaption(prompt: string) {
   const apiKey = process.env.GEMINI_API_KEY;
   
   if (!apiKey) {
-    return { success: false, text: "API Key missing in Vercel settings!" };
+    return { success: false, text: "API Key is missing in Vercel. Please check settings." };
   }
 
-  try {
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    // మోడల్ పేరుని 'gemini-1.5-flash' కి మార్చాను
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const genAI = new GoogleGenerativeAI(apiKey);
+  
+  // ప్లాన్ A: Gemini 1.5 Flash
+  // ప్లాన్ B: Gemini Pro (ఒకవేళ Flash 404 వస్తే ఇది పనిచేస్తుంది)
+  const models = ["gemini-1.5-flash", "gemini-pro"];
 
-    const fullPrompt = `You are a social media expert. Create a catchy, viral caption for: "${prompt}". 
-    Include emojis and 3-5 hashtags. Keep it professional and engaging.`;
+  for (const modelName of models) {
+    try {
+      console.log(`Attempting AI generation with: ${modelName}`);
+      const model = genAI.getGenerativeModel({ model: modelName });
 
-    const result = await model.generateContent(fullPrompt);
-    const response = await result.response;
-    const text = response.text();
+      const fullPrompt = `Generate a viral social media caption for: "${prompt}". Include emojis and hashtags.`;
 
-    if (!text) throw new Error("No response from AI");
+      const result = await model.generateContent(fullPrompt);
+      const response = await result.response;
+      const text = response.text();
 
-    return { success: true, text: text };
-  } catch (error: any) {
-    console.error("Gemini API Error Detail:", error);
-    
-    // ఒకవేళ 1.5-flash పనిచేయకపోతే, పాత స్థిరమైన మోడల్ కి మారుద్దాం
-    if (error.message.includes("404") || error.message.includes("not found")) {
-      return { success: false, text: "Model error. Please check if Gemini API is enabled in AI Studio." };
+      if (text) {
+        return { success: true, text: text };
+      }
+    } catch (error: any) {
+      console.error(`Model ${modelName} failed:`, error.message);
+      // ఒకవేళ ఇది చివరి మోడల్ అయితే ఎర్రర్ రిటర్న్ చెయ్యి
+      if (modelName === "gemini-pro") {
+        return { success: false, text: "AI is currently unavailable. Check your API key in Google AI Studio." };
+      }
     }
-    
-    return { success: false, text: "AI is currently busy. Try in a moment!" };
   }
+
+  return { success: false, text: "Something went wrong. Please try again." };
 }
