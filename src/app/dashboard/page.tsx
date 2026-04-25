@@ -1,81 +1,94 @@
-import { getKindeServerSession } from "@kinde-oss/kinde-auth-nextjs/server";
-import { redirect } from "next/navigation";
-import clientPromise from "../../lib/mongodb";
-import { 
-  LayoutDashboard, Globe, BarChart3, 
-  Rocket, Clock, Zap, Send, TrendingUp 
-} from "lucide-react";
-import Composer from "../../components/Composer";
-import { LogoutLink } from "@kinde-oss/kinde-auth-nextjs/components";
-import { getUserAccounts } from "../actions/account-actions";
+"use client";
+import React, { useState, useEffect } from "react";
+import { CheckCircle2, Zap, RefreshCcw, Lock } from "lucide-react";
+import { getUserAccounts } from "../../actions/account-actions";
 
-async function getHistory(userId: string) {
-  const client = await clientPromise;
-  return await client.db("postjet").collection("posts")
-    .find({ userId }).sort({ createdAt: -1 }).limit(6).toArray();
-}
+// Real Social Media Logos (PNG/SVG Links)
+const LOGOS = {
+  facebook: "https://upload.wikimedia.org/wikipedia/commons/6/6c/Facebook_Logo_2023.png",
+  instagram: "https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg",
+  whatsapp: "https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg",
+  linkedin: "https://upload.wikimedia.org/wikipedia/commons/8/81/LinkedIn_icon.svg",
+  telegram: "https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg"
+};
 
-export default async function DashboardPage() {
-  const { isAuthenticated, getUser } = getKindeServerSession();
-  if (!(await isAuthenticated())) redirect("/api/auth/login");
-  
-  const user = await getUser();
-  const [accounts, history] = await Promise.all([
-    getUserAccounts(),
-    getHistory(user?.id || "")
-  ]);
+const PLATFORMS = [
+  { id: "Facebook", key: "facebook", logo: LOGOS.facebook, active: true },
+  { id: "Instagram", key: "instagram", logo: LOGOS.instagram, active: true },
+  { id: "WhatsApp Business", key: "whatsapp", logo: LOGOS.whatsapp, active: true },
+  { id: "LinkedIn", key: "linkedin", logo: LOGOS.linkedin, active: false },
+  { id: "Telegram Bot", key: "telegram", logo: LOGOS.telegram, active: false },
+];
 
-  const stats = [
-    { label: "Total Posts", value: history.length.toString(), icon: <Send size={20}/>, color: "bg-blue-500" },
-    { label: "Reach", value: "Active", icon: <TrendingUp size={20}/>, color: "bg-purple-500" },
-    { label: "Platforms", value: accounts.length.toString(), icon: <Globe size={20}/>, color: "bg-orange-500" },
-  ];
+export default function AccountsPage() {
+  const [accounts, setAccounts] = useState<any[]>([]);
+  const [syncing, setSyncing] = useState(false);
+
+  const load = async () => {
+    setSyncing(true);
+    const data = await getUserAccounts();
+    setAccounts(data);
+    setTimeout(() => setSyncing(false), 800);
+  };
+
+  useEffect(() => { load(); }, []);
 
   return (
-    <div className="min-h-screen bg-[#0F172A] text-white flex font-sans overflow-hidden">
-      <aside className="w-72 bg-slate-900/50 backdrop-blur-xl border-r border-slate-800 flex flex-col p-8 sticky top-0 h-screen z-30">
-        <div className="flex items-center gap-3 mb-16">
-          <img src="/logo.png" alt="PostJet" className="w-12" />
-          <span className="font-black text-3xl italic tracking-tighter text-white">Post<span className="text-blue-500">Jet</span></span>
+    <div className="min-h-screen bg-[#FAF9F6] text-slate-900 p-6 md:p-12 font-sans">
+      {/* Soft Header */}
+      <div className="mb-10 flex items-center justify-between border-b border-slate-200 pb-6">
+        <div className="flex items-center gap-3">
+          <div className="w-3 h-3 bg-blue-600 rounded-full animate-pulse"></div>
+          <h2 className="text-4xl font-extrabold tracking-tighter text-black">Mission Control</h2>
+          <span className="ml-2 bg-slate-100 text-slate-500 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-widest">Beta v1.0</span>
         </div>
-        <nav className="flex-1 space-y-4">
-          <a href="#" className="flex items-center gap-4 bg-gradient-to-r from-blue-600 to-blue-400 text-white p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest shadow-lg shadow-blue-500/20">
-            <LayoutDashboard size={20} /> Dashboard
-          </a>
-          <a href="/dashboard/accounts" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all">
-            <Globe size={20} /> Connections
-          </a>
-          <a href="#" className="flex items-center gap-4 text-slate-400 p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-slate-800 transition-all">
-            <BarChart3 size={20} /> Analytics
-          </a>
-        </nav>
-        <div className="pt-8 border-t border-slate-800">
-           <LogoutLink className="flex items-center gap-4 text-slate-500 p-4 rounded-2xl font-black text-[11px] uppercase tracking-widest hover:text-red-400 transition-all">Logout</LogoutLink>
-        </div>
-      </aside>
+        <button onClick={load} className="group flex items-center gap-2.5 text-xs bg-white border border-slate-200 text-black px-6 py-3 rounded-full font-bold uppercase hover:bg-slate-50 hover:border-slate-300 transition-all shadow-sm">
+          <RefreshCcw size={14} className={`text-blue-600 ${syncing ? "animate-spin" : ""}`} />
+          {syncing ? "Syncing..." : "Refresh Status"}
+        </button>
+      </div>
 
-      <main className="flex-1 p-8 md:p-12 overflow-y-auto relative">
-        <header className="mb-12 flex justify-between items-end relative z-10">
-            <div>
-              <p className="text-blue-400 font-black uppercase text-[10px] tracking-[0.4em] mb-2">Command Center</p>
-              <h2 className="text-5xl font-black tracking-tighter uppercase italic">Mission Control</h2>
-            </div>
-            <div className="flex gap-4">
-               {stats.map((stat) => (
-                 <div key={stat.label} className="bg-slate-900/50 backdrop-blur-md border border-slate-800 p-4 rounded-2xl min-w-[140px]">
-                    <div className="flex items-center justify-between mb-2">
-                       <span className="text-slate-500 font-black text-[9px] uppercase tracking-widest">{stat.label}</span>
-                       <div className={`${stat.color} p-1.5 rounded-lg text-white`}>{stat.icon}</div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {PLATFORMS.map((p) => {
+          const isConnected = accounts.some(acc => acc.platform.toLowerCase() === p.key);
+          return (
+            <div key={p.id} className={`relative bg-white border ${p.active ? 'border-slate-100' : 'border-slate-100 opacity-60'} p-8 rounded-3xl flex flex-col justify-between group hover:border-blue-100 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-500 shadow-sm`}>
+              
+              <div className="flex items-center justify-between mb-8">
+                {/* Real Logo Installation */}
+                <img src={p.logo} alt={p.id} className={`h-12 w-12 object-contain ${p.active ? '' : 'grayscale'}`} />
+                
+                <div className="flex items-center gap-2 border border-slate-100 bg-slate-50 px-4 py-1.5 rounded-full">
+                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.4)]' : 'bg-slate-400'}`}></div>
+                    <span className={`text-[10px] font-bold uppercase tracking-widest ${isConnected ? 'text-green-600' : 'text-slate-500'}`}>
+                      {isConnected ? 'Connected' : 'Offline'}
+                    </span>
+                </div>
+              </div>
+
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <h4 className="text-xl font-bold text-black tracking-tight">{p.id}</h4>
+                  <p className="text-xs text-slate-500 mt-1">{p.active ? 'Official API connection' : 'Coming soon in next update'}</p>
+                </div>
+                
+                {p.active ? (
+                  <button 
+                    onClick={() => window.location.href = `/api/auth/social/${p.key}`}
+                    className={`p-4 rounded-xl transition-all duration-300 ${isConnected ? 'bg-slate-100 text-slate-500 hover:bg-slate-200' : 'bg-blue-600 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-700 hover:-translate-y-1'}`}
+                  >
+                    {isConnected ? <CheckCircle2 size={20}/> : <Zap size={20}/>}
+                  </button>
+                ) : (
+                    <div className="p-4 rounded-xl bg-slate-100 text-slate-400">
+                        <Lock size={20} />
                     </div>
-                    <p className="text-2xl font-black tracking-tighter">{stat.value}</p>
-                 </div>
-               ))}
+                )}
+              </div>
             </div>
-        </header>
-        <div className="mb-16 relative z-10">
-          <Composer connectedAccounts={accounts} />
-        </div>
-      </main>
+          );
+        })}
+      </div>
     </div>
   );
 }
