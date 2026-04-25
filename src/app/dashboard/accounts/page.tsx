@@ -1,8 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { CheckCircle2, Zap, RefreshCcw, Lock } from "lucide-react";
-
-// కచ్చితంగా ఈ పాత్ చెక్ చెయ్యి జీవన్. ఒకవేళ ఎర్రర్ వస్తే '../../../actions/account-actions' అని మార్చు.
 import { getUserAccounts } from "../../actions/account-actions"; 
 
 const LOGOS = {
@@ -30,7 +28,7 @@ export default function AccountsPage() {
     try {
       const data = await getUserAccounts();
       setAccounts(data || []);
-    } catch (e) { console.error("Sync Error:", e); }
+    } catch (e) { console.error("Error fetching accounts", e); }
     setTimeout(() => setSyncing(false), 800);
   };
 
@@ -41,11 +39,11 @@ export default function AccountsPage() {
       <header className="mb-12 flex justify-between items-center border-b border-slate-200 pb-8">
         <div>
           <h2 className="text-4xl font-black tracking-tighter text-black uppercase italic">Mission Control</h2>
-          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Official Connections</p>
+          <p className="text-slate-400 text-[10px] font-bold uppercase tracking-[0.3em] mt-1">Official Integrations</p>
         </div>
         <button onClick={load} className="flex items-center gap-3 bg-white border border-slate-200 px-6 py-3 rounded-2xl font-bold text-[10px] uppercase shadow-sm active:scale-95 transition-all">
           <RefreshCcw size={14} className={`text-blue-600 ${syncing ? "animate-spin" : ""}`} />
-          {syncing ? "Updating..." : "Sync Status"}
+          {syncing ? "Syncing Universe..." : "Refresh Assets"}
         </button>
       </header>
 
@@ -63,7 +61,7 @@ export default function AccountsPage() {
               <div className="flex justify-between items-end">
                 <div>
                   <h4 className="text-2xl font-black text-black tracking-tight">{p.id}</h4>
-                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{p.active ? 'API Linked' : 'In Development'}</p>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">{p.active ? 'Ready for Broadcast' : 'Launching Soon'}</p>
                 </div>
                 {p.active ? (
                   <button onClick={() => window.location.href = `/api/auth/social/${p.key}`} className={`p-5 rounded-2xl transition-all ${isConnected ? 'bg-slate-50 text-slate-300' : 'bg-blue-600 text-white shadow-lg shadow-blue-100 hover:scale-105'}`}>
