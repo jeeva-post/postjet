@@ -1,155 +1,186 @@
 "use client";
-import { useState } from "react";
 
-export default function GlobalDashboard() {
-  const [content, setContent] = useState("");
-  const [mediaUrl, setMediaUrl] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState("");
-  const [uploading, setUploading] = useState(false);
+import React, { useState, useRef } from 'react';
+import { 
+  PlusCircle, ExternalLink, Image as ImageIcon, 
+  X, Eye, Smartphone, Monitor, Smile, Send, Calendar, Clock, ChevronDown
+} from 'lucide-react';
+// Step 1: Search context ni import cheyalai
+import { useSearch } from '@/context/SearchContext';
 
-  // 📁 ఇమేజ్/వీడియో అప్‌లోడ్ లాజిక్ (నీ స్వంత వివరాలతో)
-  const handleFileUpload = async (e: any) => {
-    const file = e.target.files[0];
-    if (!file) return;
+const platforms = [
+  { name: 'Instagram', color: 'bg-gradient-to-tr from-yellow-400 via-red-500 to-purple-600' },
+  { name: 'Facebook', color: 'bg-blue-600' },
+  { name: 'LinkedIn', color: 'bg-blue-700' },
+  { name: 'Twitter (X)', color: 'bg-black' },
+  { name: 'Threads', color: 'bg-neutral-800' },
+  { name: 'YouTube', color: 'bg-red-600' },
+  { name: 'TikTok', color: 'bg-black' },
+  { name: 'Pinterest', color: 'bg-red-700' },
+  { name: 'Reddit', color: 'bg-orange-600' },
+  { name: 'Discord', color: 'bg-indigo-600' },
+  { name: 'Snapchat', color: 'bg-yellow-400' },
+  { name: 'WhatsApp', color: 'bg-green-500' },
+  { name: 'Telegram', color: 'bg-sky-500' },
+  { name: 'Medium', color: 'bg-black' },
+  { name: 'Google Biz', color: 'bg-blue-500' },
+];
 
-    setUploading(true);
-    setStatus("📤 Media అప్‌లోడ్ అవుతోంది... ఆగండి.");
+export default function DashboardPage() {
+  // Step 2: Search Query ni context nundi techukovali
+  const { searchQuery } = useSearch();
+  
+  const [postText, setPostText] = useState("");
+  const [selectedMedia, setSelectedMedia] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video' | null>(null);
+  const [isScheduling, setIsScheduling] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // నీ పర్సనల్ క్లౌడ్ వివరాలు ఇక్కడ ఉన్నాయి
-    const CLOUD_NAME = "dd0kewyk5"; 
-    const UPLOAD_PRESET = "postjet_preset"; 
-
-    const formData = new FormData();
-    formData.append("file", file);
-    formData.append("upload_preset", UPLOAD_PRESET);
-
-    try {
-      // Unsigned అప్‌లోడ్ పద్ధతి - దీనికి API Key అవసరం లేదు
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/upload`, {
-        method: "POST",
-        body: formData,
-      });
-      
-      const data = await res.json();
-      
-      if (data.secure_url) {
-        setMediaUrl(data.secure_url); 
-        setStatus("✅ Media Ready! ప్రివ్యూ చూడండి.");
-      } else {
-        // ఇక్కడ ఎర్రర్ వస్తే క్లియర్ గా చూపిస్తుంది
-        setStatus(`❌ Error: ${data.error?.message || "Cloudinary గుర్తించలేకపోయింది"}`);
-      }
-    } catch (err) {
-      setStatus("❌ నెట్‌వర్క్ ఇబ్బంది. మళ్ళీ ట్రై చెయ్యి.");
-    } finally {
-      setUploading(false);
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const url = URL.createObjectURL(file);
+      setSelectedMedia(url);
+      setMediaType(file.type.startsWith('video') ? 'video' : 'image');
     }
   };
 
-  const handlePost = async (platform: string) => {
-    if (!content && !mediaUrl) return alert("టెక్స్ట్ లేదా ఇమేజ్ ఏదో ఒకటి ఉండాలి!");
-    
-    setLoading(true);
-    setStatus(`🚀 ${platform} కి పంపిస్తున్నాను...`);
-
-    try {
-      const res = await fetch(`/api/post/${platform}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, mediaUrl }),
-      });
-
-      const data = await res.json();
-      if (data.success) {
-        setStatus(`✅ ${platform} లో సక్సెస్‌ఫుల్‌గా పోస్ట్ అయింది!`);
-      } else {
-        setStatus(`❌ ఎర్రర్: ${data.error || "ఏదో పొరపాటు జరిగింది"}`);
-      }
-    } catch (err) {
-      setStatus("❌ కనెక్షన్ ఫెయిల్ అయింది.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  // Step 3: Filter Logic - Search bar lo type chese text ki match ayye platforms ni matrame filter chesthundhi
+  const filteredPlatforms = platforms.filter(app => 
+    app.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] p-4 md:p-8 font-sans">
-      <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* ఎడమ వైపు: పోస్ట్ కంపోజర్ (SaaS Style) */}
-        <div className="lg:col-span-7 bg-white p-8 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100 space-y-6">
-          <div className="flex justify-between items-center">
-             <h1 className="text-3xl font-black text-slate-800 tracking-tight italic">
-               PostJet <span className="text-blue-600 not-italic">Pro</span>
-             </h1>
-             <span className="bg-blue-100 text-blue-700 text-[10px] px-3 py-1 rounded-full font-bold uppercase">Enterprise Version</span>
+    <div className="p-8 space-y-8 max-w-7xl mx-auto w-full animate-in fade-in duration-700">
+      <div>
+        <h2 className="text-3xl font-bold text-white tracking-tight">Welcome Back!</h2>
+        <p className="text-slate-500 mt-1">Manage your global social presence from one single command center.</p>
+      </div>
+
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-4">
+        {/* WRITING BOARD WITH INLINE SCHEDULER */}
+        <div className="bg-[#0f172a] border border-white/5 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+          <div className="flex items-center justify-between border-b border-white/5 pb-4">
+            <h3 className="font-bold text-white flex items-center gap-2 italic">
+              <span className="w-1.5 h-4 bg-cyan-500 rounded-full"></span> Compose Content
+            </h3>
+            <button 
+              onClick={() => fileInputRef.current?.click()} 
+              className="p-2 bg-white/5 hover:bg-cyan-500/20 text-slate-400 hover:text-cyan-400 rounded-lg transition-all"
+            >
+              <ImageIcon size={20} />
+            </button>
+            <input type="file" hidden ref={fileInputRef} accept="image/*,video/*" onChange={handleFileUpload} />
           </div>
-          
+
           <textarea
-            className="w-full p-6 bg-slate-50 border border-slate-200 rounded-3xl h-60 outline-none focus:ring-4 focus:ring-blue-100 transition-all text-lg placeholder:text-slate-300 shadow-inner"
-            placeholder="మీ గ్లోబల్ మెసేజ్ ఇక్కడ రాయండి..."
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+            value={postText}
+            onChange={(e) => setPostText(e.target.value)}
+            placeholder="What's happening? Write your post here..."
+            className="w-full h-40 bg-black/40 border border-white/5 rounded-2xl p-5 outline-none focus:ring-1 focus:ring-cyan-500/50 text-slate-200 resize-none text-lg leading-relaxed"
           />
 
-          <div className="space-y-4">
-            <label className="block cursor-pointer">
-              <div className="flex items-center justify-center gap-3 bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-dashed border-blue-200 p-6 rounded-3xl hover:from-blue-100 hover:to-indigo-100 transition-all group">
-                <span className="text-3xl group-hover:scale-110 transition-transform">📁</span>
-                <span className="font-bold text-blue-800">
-                  {uploading ? "అప్‌లోడ్ అవుతోంది..." : "సిస్టమ్ గ్యాలరీ నుండి సెలెక్ట్ చెయ్యి"}
-                </span>
+          {/* SCHEDULING SECTION */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                <Calendar size={16} className="text-cyan-500" /> 
+                <span>Schedule this post?</span>
               </div>
-              <input type="file" className="hidden" accept="image/*,video/*" onChange={handleFileUpload} />
-            </label>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-6">
-              {["whatsapp", "facebook", "instagram", "linkedin", "telegram", "youtube"].map((app) => (
-                <button
-                  key={app}
-                  onClick={() => handlePost(app)}
-                  disabled={loading || uploading}
-                  className="bg-slate-900 text-white p-4 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] hover:bg-blue-600 transition-all active:scale-95 disabled:bg-slate-200 disabled:text-slate-400 shadow-md"
-                >
-                  Post to {app}
-                </button>
-              ))}
+              <button 
+                onClick={() => setIsScheduling(!isScheduling)}
+                className={`w-12 h-6 rounded-full transition-all relative ${isScheduling ? 'bg-cyan-500' : 'bg-slate-700'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${isScheduling ? 'right-1' : 'left-1'}`}></div>
+              </button>
             </div>
+
+            {isScheduling && (
+              <div className="grid grid-cols-2 gap-3 pt-2 animate-in fade-in zoom-in duration-300">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Date</label>
+                  <input type="date" className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-cyan-500" />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase tracking-widest text-slate-500 font-bold">Time</label>
+                  <input type="time" className="w-full bg-black/40 border border-white/10 rounded-lg p-2 text-xs text-white outline-none focus:border-cyan-500" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex justify-between items-center pt-2">
+             <button className="p-2 text-slate-500 hover:text-cyan-400 transition-colors"><Smile size={22}/></button>
+             <button className="bg-cyan-500 hover:bg-cyan-400 text-black font-extrabold px-10 py-3 rounded-xl transition-all flex items-center gap-2 shadow-lg shadow-cyan-500/20 active:scale-95">
+               {isScheduling ? <Clock size={18} /> : <Send size={18} />}
+               {isScheduling ? "Schedule Blast" : "Publish to 15+ Apps"}
+             </button>
           </div>
         </div>
 
-        {/* కుడి వైపు: లైవ్ ప్రివ్యూ (ఇక్కడ ఇమేజ్ కనిపిస్తుంది) */}
-        <div className="lg:col-span-5 space-y-6">
-          <div className="bg-white p-6 rounded-[2.5rem] shadow-xl shadow-slate-200/50 border border-slate-100">
-            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-4 ml-2">Live Broadcast Preview</h3>
-            
-            <div className="bg-slate-100 rounded-[2rem] p-5 border border-slate-200 min-h-[450px] shadow-inner">
-              {mediaUrl ? (
-                <div className="w-full mb-5 rounded-2xl overflow-hidden shadow-2xl border-4 border-white">
-                  {mediaUrl.includes("video") ? (
-                    <video src={mediaUrl} className="w-full h-auto" controls />
-                  ) : (
-                    <img src={mediaUrl} className="w-full h-auto" alt="Preview" />
-                  )}
+        {/* Live Preview Card */}
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between px-2 text-[10px] text-slate-500 font-bold uppercase tracking-widest">
+            <span className="flex items-center gap-2"><Eye size={12} className="text-cyan-500"/> Real-time Preview</span>
+            <div className="flex gap-3 items-center">
+              <Smartphone size={14} className="cursor-pointer" />
+              <Monitor size={14} className="text-cyan-500" />
+            </div>
+          </div>
+          
+          <div className="bg-[#030816] border border-white/5 rounded-3xl p-8 flex items-center justify-center min-h-[400px]">
+            <div className="w-full max-w-[340px] bg-[#0f172a] rounded-2xl border border-white/10 shadow-2xl overflow-hidden">
+              <div className="p-4 flex items-center gap-3 border-b border-white/5">
+                <div className="w-10 h-10 rounded-xl bg-cyan-500 flex items-center justify-center font-bold text-black text-sm">P</div>
+                <div>
+                  <p className="text-[12px] font-bold text-white leading-tight">PostJet Official</p>
+                  <p className="text-[10px] text-slate-500 italic">Ready to Blast</p>
+                </div>
+              </div>
+              
+              <div className="px-4 py-6 min-h-[80px] text-[14px] text-slate-300 whitespace-pre-wrap">
+                {postText || "Your content will appear here..."}
+              </div>
+
+              {selectedMedia ? (
+                <div className="w-full aspect-square bg-black">
+                  <img src={selectedMedia} className="w-full h-full object-cover" alt="preview" />
                 </div>
               ) : (
-                <div className="w-full aspect-video bg-slate-200 rounded-2xl mb-5 flex items-center justify-center text-slate-400 italic text-sm">
-                   మీడియా సెలెక్ట్ కాలేదు
+                <div className="w-full aspect-video bg-white/5 flex flex-col items-center justify-center gap-3">
+                  <ImageIcon size={40} className="text-white/5"/>
                 </div>
               )}
-              <p className="text-slate-800 whitespace-pre-wrap leading-relaxed font-medium">
-                {content || "మీ మెసేజ్ యొక్క ప్రివ్యూ ఇక్కడ కనిపిస్తుంది..."}
-              </p>
             </div>
           </div>
-
-          <div className={`p-5 rounded-2xl font-black text-center text-xs uppercase tracking-widest shadow-lg transition-all border-2 ${status.includes("✅") ? "bg-green-50 text-green-700 border-green-200" : "bg-white text-blue-700 border-blue-100"}`}>
-            {status || "Ready to connect the world"}
-          </div>
         </div>
+      </section>
 
-      </div>
+      {/* PLATFORMS GRID - Updated with Search Filtering */}
+      <section className="pt-4 pb-12">
+        <h3 className="text-lg font-semibold text-slate-300 mb-6 flex items-center gap-2">
+          <PlusCircle size={20} className="text-cyan-500" /> 
+          Connected Platforms ({filteredPlatforms.length})
+        </h3>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+          {filteredPlatforms.length > 0 ? (
+            filteredPlatforms.map((app, index) => (
+              <div key={index} className="group animate-in fade-in zoom-in duration-300 relative bg-[#0f172a] border border-white/5 p-4 rounded-2xl flex flex-col items-center justify-center gap-4 transition-all hover:scale-105 cursor-pointer shadow-lg">
+                <div className={`w-12 h-12 rounded-xl ${app.color} flex items-center justify-center text-white font-bold text-xl shadow-lg`}>
+                  {app.name.charAt(0)}
+                </div>
+                <p className="font-medium text-slate-200 text-sm">{app.name}</p>
+                <ExternalLink size={12} className="absolute top-3 right-3 text-slate-600" />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full py-10 text-center border border-dashed border-white/10 rounded-2xl text-slate-500">
+              No platforms found matching "{searchQuery}"
+            </div>
+          )}
+        </div>
+      </section>
     </div>
   );
 }
