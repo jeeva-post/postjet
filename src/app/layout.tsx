@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-// ❌ import "./globals.css";
-// ✅ Deeni badulu idi vaadandi:
-import { supabase } from '../utils/supabase';
+import "./globals.css"; // 👈 Idhi unte ne dashboard ki design vasthundi
+import { supabase } from '../utils/supabase'; // 👈 Idhi mee database connection
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -18,7 +17,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${inter.className} bg-[#0A0F1C]`}>
+      <body className={`${inter.className} bg-[#0A0F1C] antialiased`}>
         {children}
       </body>
     </html>
