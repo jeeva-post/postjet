@@ -119,7 +119,7 @@ export default function DashboardPage() {
       {showStatusModal && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-900/50 backdrop-blur-md p-4 animate-in fade-in duration-300">
           <div className="bg-white rounded-[40px] p-8 w-full max-w-md shadow-2xl border border-slate-100 text-slate-800">
-            <h3 className="text-xl font-black mb-6 italic uppercase tracking-tighter text-indigo-600">PostJet Blaster</h3>
+            <h3 className="text-xl font-black mb-6 italic uppercase tracking-tighter text-indigo-600">PostJet live Blaster</h3>
             <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
               {selectedApps.map((app) => {
                 const info = platformStatuses[app] || { status: 'pending' };
