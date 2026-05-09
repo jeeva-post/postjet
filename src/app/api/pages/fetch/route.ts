@@ -1,24 +1,33 @@
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 
-export async function POST(request: Request) {
+export async function POST() {
+  const supabase = createRouteHandlerClient({ cookies });
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+
+  // Get Facebook token from DB
+  const { data: connection } = await supabase
+    .from('user_connections')
+    .filter('user_id', 'eq', user.id)
+    .filter('platform', 'eq', 'facebook')
+    .single();
+
+  if (!connection) return NextResponse.json({ pages: [] });
+
   try {
-    const { platform, accessToken } = await request.json();
-
-    if (platform === "facebook") {
-      // Facebook Pages with Page Tokens fetch chestunnam
-      const response = await fetch(
-        `https://graph.facebook.com/me/accounts?access_token=${accessToken}`
-      );
-      const data = await response.json();
-
-      if (data.error) throw new Error(data.error.message);
-
-      // Meta 'data' array lo name, id, access_token (page specific) untayi
-      return NextResponse.json(data.data || []);
-    }
-
-    return NextResponse.json([]);
-  } catch (error: any) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    const response = await fetch(
+      `https://graph.facebook.com/v19.0/me/accounts?access_token=${connection.access_token}`
+    );
+    const data = await response.json();
+    
+    return NextResponse.json({ 
+      pages: data.data || [],
+      error: data.error ? data.error.message : null 
+    });
+  } catch (err) {
+    return NextResponse.json({ error: 'Fetch failed' }, { status: 500 });
   }
 }
