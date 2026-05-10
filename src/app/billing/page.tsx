@@ -1,106 +1,115 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { initializePaddle, Paddle } from '@paddle/paddle-js';
+import { PADDLE_IDS } from '@/lib/paddle-config';
+
+declare global {
+  interface Window {
+    Paddle?: {
+      Environment: { set: (env: string) => void };
+      Setup: (options: { token: string }) => void;
+      Checkout: { open: (options: any) => void };
+    };
+  }
+}
 
 export default function BillingPage() {
-  const [paddle, setPaddle] = useState<Paddle>();
+  const [paddleReady, setPaddleReady] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    // Paddle Sandbox Initialization
-    initializePaddle({ 
-      environment: 'sandbox', 
-      token: process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN!,
-      checkout: {
-        settings: {
-          displayMode: 'overlay',
-          theme: 'dark'
-        }
+    const initializePaddle = () => {
+      if (!window.Paddle || !PADDLE_IDS.TOKEN) {
+        setLoadError(true);
+        return;
       }
-    }).then((paddleInstance: Paddle | undefined) => {
-      if (paddleInstance) {
-        console.log("Paddle Initialized Successfully ✅");
-        setPaddle(paddleInstance);
+
+      try {
+        window.Paddle.Environment.set('sandbox');
+        window.Paddle.Setup({ token: PADDLE_IDS.TOKEN });
+        setPaddleReady(true);
+      } catch (error) {
+        console.error('Paddle initialization failed:', error);
+        setLoadError(true);
       }
-    });
+    };
+
+    if (window.Paddle) {
+      initializePaddle();
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = 'https://cdn.paddle.com/paddle/v2/paddle.js';
+    script.async = true;
+    script.crossOrigin = 'anonymous';
+    script.onload = initializePaddle;
+    script.onerror = () => setLoadError(true);
+    document.body.appendChild(script);
+
+    return () => {
+      document.body.removeChild(script);
+    };
   }, []);
 
-  const handleCheckout = (priceId: string | undefined) => {
-    // --- DEBUG LOGS ---
-    console.log("Clicked Price ID:", priceId);
-    console.log("Token Status:", process.env.NEXT_PUBLIC_PADDLE_CLIENT_TOKEN ? "Token Found" : "Token Missing ❌");
-
-    if (!paddle) {
-      alert("Paddle loading... please wait a moment.");
+  const handleCheckout = (priceId: string) => {
+    if (!window.Paddle || !paddleReady) {
+      setLoadError(true);
       return;
     }
 
-    if (!priceId || priceId.trim() === "") {
-      alert("Error: Price ID is missing or undefined! Check your Vercel Env Variables.");
-      console.error("The priceId passed to checkout is invalid:", priceId);
-      return;
-    }
-
-    // Opening Checkout
-    paddle.Checkout.open({
-      items: [{ priceId: priceId, quantity: 1 }],
+    window.Paddle.Checkout.open({
+      settings: {
+        displayMode: 'overlay',
+        theme: 'dark',
+      },
+      items: [{ priceId, quantity: 1 }],
     });
   };
 
   return (
-    <div className="min-h-screen bg-black text-white flex flex-col items-center py-20 px-4">
-      <h1 className="text-4xl font-bold mb-4">Choose Your Plan</h1>
-      <p className="text-zinc-400 mb-12 text-center max-w-lg">
-        Upgrade to Pro to unlock 17+ platforms automation and advanced video posting.
-      </p>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl w-full">
-        {/* Starter Plan - $6.00 */}
-        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-3xl hover:border-zinc-700 transition">
-          <h2 className="text-xl font-medium mb-2 text-zinc-300">Starter</h2>
-          <div className="flex items-baseline mb-6">
-            <span className="text-4xl font-bold">$6.00</span>
-            <span className="text-zinc-500 ml-2">/month</span>
-          </div>
-          <ul className="space-y-4 mb-8 text-zinc-400 text-sm">
-            <li>✓ Connect up to 5 Accounts</li>
-            <li>✓ Image & Text Posting</li>
-            <li>✓ Basic Analytics</li>
-          </ul>
-          <button 
-            onClick={() => handleCheckout(process.env.NEXT_PUBLIC_PRICE_ID_STARTER)}
-            className="w-full py-3 px-6 rounded-xl bg-zinc-100 text-black hover:bg-white transition font-bold"
-          >
-            Get Started
-          </button>
+    <div className="min-h-screen bg-black text-white flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-4xl space-y-8">
+        <div className="rounded-3xl border border-zinc-800 bg-zinc-950/70 p-10 text-center">
+          <h1 className="text-4xl font-semibold mb-4">PostJet Pro Plans</h1>
+          <p className="text-zinc-400 max-w-2xl mx-auto leading-8">
+            Unlock premium automation features and publish to all supported platforms with one click. Paddle handles checkout securely so payment details are never stored by PostJet.
+          </p>
+          {loadError ? (
+            <p className="mt-4 text-sm text-red-400">
+              Paddle checkout failed to load. Refresh the page or contact support if this persists.
+            </p>
+          ) : !paddleReady ? (
+            <p className="mt-4 text-sm text-zinc-400">Loading secure checkout...</p>
+          ) : null}
         </div>
 
-        {/* Pro Blast Plan - $18.00 */}
-        <div className="bg-zinc-900 border-2 border-blue-600 p-8 rounded-3xl relative shadow-[0_0_20px_rgba(37,99,235,0.2)]">
-          <div className="absolute top-0 right-8 -translate-y-1/2 bg-blue-600 text-white text-[10px] px-3 py-1 rounded-full font-black tracking-widest">
-            MOST POPULAR
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="bg-zinc-900 p-8 rounded-3xl border border-zinc-800 flex flex-col items-center text-center">
+            <h2 className="text-xl mb-4 text-zinc-400">Starter</h2>
+            <p className="text-5xl font-bold mb-8">$6<span className="text-base align-super">/mo</span></p>
+            <button
+              type="button"
+              disabled={!paddleReady}
+              onClick={() => handleCheckout(PADDLE_IDS.STARTER)}
+              className="w-full py-3 rounded-xl font-bold transition disabled:cursor-not-allowed disabled:opacity-50 bg-zinc-100 text-black hover:bg-zinc-200"
+            >
+              Get Started
+            </button>
           </div>
-          <h2 className="text-xl font-medium mb-2 text-blue-400">Pro Blast</h2>
-          <div className="flex items-baseline mb-6">
-            <span className="text-4xl font-bold">$18.00</span>
-            <span className="text-zinc-500 ml-2">/month</span>
-          </div>
-          <ul className="space-y-4 mb-8 text-zinc-300 text-sm">
-            <li>✓ All 17+ Social Platforms</li>
-            <li>✓ HD Video Upload Support</li>
-            <li>✓ Priority API Integration</li>
-            <li>✓ Unlimited Monthly Posts</li>
-          </ul>
-          <button 
-            onClick={() => handleCheckout(process.env.NEXT_PUBLIC_PRICE_ID_PRO)}
-            className="w-full py-3 px-6 rounded-xl bg-blue-600 hover:bg-blue-700 transition font-bold shadow-lg shadow-blue-900/20"
-          >
-            Upgrade to Pro
-          </button>
-        </div>
-      </div>
 
-      <div className="mt-12 text-zinc-600 text-xs">
-        Secure checkout powered by Paddle Sandbox
+          <div className="bg-zinc-900 p-8 rounded-3xl border-2 border-blue-600 flex flex-col items-center text-center">
+            <h2 className="text-xl mb-4 text-blue-400">Pro Blast</h2>
+            <p className="text-5xl font-bold mb-8">$15<span className="text-base align-super">.89/mo</span></p>
+            <button
+              type="button"
+              disabled={!paddleReady}
+              onClick={() => handleCheckout(PADDLE_IDS.PRO)}
+              className="w-full py-3 rounded-xl font-bold transition disabled:cursor-not-allowed disabled:opacity-50 bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Upgrade Now
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );

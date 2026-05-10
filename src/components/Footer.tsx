@@ -1,37 +1,93 @@
-import React from 'react';
+import Link from "next/link";
 
-const Footer = () => {
+export default function Footer() {
   return (
-    <footer className="bg-slate-950 py-12 border-t border-slate-900 mt-auto">
-      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-6">
-        <div className="flex flex-col items-center md:items-start gap-2">
-          <div className="text-white font-bold text-xl italic uppercase tracking-tighter">
-            PostJet<span className="text-indigo-500">.</span>
-          </div>
-          <p className="text-slate-500 text-[10px] uppercase tracking-widest font-bold">
-            © 2026 All Rights Reserved
+    <footer className="bg-black border-t border-zinc-900 pt-16 pb-8 px-6">
+      <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
+        <div className="col-span-1 md:col-span-1">
+          <Link
+            href="/"
+            className="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent"
+          >
+            PostJet
+          </Link>
+          <p className="mt-4 text-zinc-500 text-sm leading-relaxed">
+            Automate your social media presence across 17+ platforms. One
+            dashboard, infinite reach.
           </p>
         </div>
 
-        <div className="flex gap-8 items-center">
-          <a href="/terms" className="text-slate-400 hover:text-white text-xs uppercase font-bold tracking-widest transition-colors">
-            Terms
-          </a>
-          <a href="/privacy" className="text-slate-400 hover:text-white text-xs uppercase font-bold tracking-widest transition-colors">
-            Privacy
-          </a>
-          <a href="mailto:support@postjet.vercel.app" className="text-slate-400 hover:text-white text-xs uppercase font-bold tracking-widest transition-colors">
-            Support
-          </a>
+        <div>
+          <h3 className="text-white font-semibold mb-4">Product</h3>
+          <ul className="space-y-2 text-zinc-500 text-sm">
+            <li>
+              <Link href="/dashboard" className="hover:text-blue-500 transition">
+                Dashboard
+              </Link>
+            </li>
+            <li>
+              <Link href="/billing" className="hover:text-blue-500 transition">
+                Pricing
+              </Link>
+            </li>
+            <li>
+              <Link href="/features" className="hover:text-blue-500 transition">
+                Features
+              </Link>
+            </li>
+          </ul>
         </div>
 
-        <div className="text-slate-600 text-[10px] uppercase tracking-tighter text-center md:text-right font-bold">
-          Merchant of Record: <br/> 
-          <span className="text-indigo-400">Paddle</span>
+        <div>
+          <h3 className="text-white font-semibold mb-4">Support</h3>
+          <ul className="space-y-2 text-zinc-500 text-sm">
+            <li>
+              <Link href="/docs" className="hover:text-blue-500 transition">
+                Documentation
+              </Link>
+            </li>
+            <li>
+              <Link
+                href="mailto:support@postjet.com"
+                className="hover:text-blue-500 transition"
+              >
+                Contact Support
+              </Link>
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <h3 className="text-white font-semibold mb-4">Legal</h3>
+          <ul className="space-y-2 text-zinc-500 text-sm">
+            <li>
+              <Link
+                href="/refund"
+                className="text-zinc-400 hover:text-blue-500 transition font-medium"
+              >
+                Refund Policy
+              </Link>
+            </li>
+            <li>
+              <Link href="/terms" className="hover:text-blue-500 transition">
+                Terms of Service
+              </Link>
+            </li>
+            <li>
+              <Link href="/privacy" className="hover:text-blue-500 transition">
+                Privacy Policy
+              </Link>
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto pt-8 border-t border-zinc-900 flex flex-col md:flex-row justify-between items-center text-zinc-600 text-xs">
+        <p>© {new Date().getFullYear()} PostJet AI. All rights reserved.</p>
+        <div className="flex space-x-6 mt-4 md:mt-0">
+          <span>Made for Web Developers</span>
         </div>
       </div>
     </footer>
   );
-};
-
-export default Footer;
+}
