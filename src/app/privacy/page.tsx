@@ -1,37 +1,34 @@
 import React from 'react';
+import { Home } from 'lucide-react';
 
 export default function PrivacyPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-slate-800 p-8 md:p-20 font-sans leading-relaxed">
       <div className="max-w-3xl mx-auto bg-white p-10 md:p-16 rounded-[40px] shadow-sm border border-slate-100">
+        
+        {/* 🏠 BACK TO HOME BUTTON */}
+        <div className="mb-10">
+          <a href="/" className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-50 hover:bg-slate-100 rounded-xl text-slate-900 text-xs font-black uppercase tracking-widest transition-all">
+            <Home size={14} /> Back to Home
+          </a>
+        </div>
+
         <h1 className="text-4xl font-black mb-8 italic uppercase tracking-tighter text-slate-900 border-b-4 border-indigo-600 inline-block">Privacy Policy</h1>
-        <p className="text-sm text-slate-500 mb-8 italic uppercase tracking-widest font-bold">Safe & Secure Data Handling</p>
-
-        <section className="space-y-8">
+        
+        <section className="space-y-8 mt-10">
           <div>
-            <h2 className="text-xl font-bold mb-3 text-slate-900">1. Information We Collect</h2>
-            <p>We collect your email and name during registration. When you connect social media accounts, we store secure access tokens. **We do not store your social media passwords.**</p>
+            <h2 className="text-xl font-bold mb-3 text-slate-900 uppercase">1. Data Handling</h2>
+            <p>We store your social media tokens securely. We never share or sell your data to third parties.</p>
           </div>
-
           <div>
-            <h2 className="text-xl font-bold mb-3 text-slate-900">2. How We Use Your Data</h2>
-            <p>Your data is strictly used to facilitate the posting of content that you initiate. We do not sell or share your data with third-party advertisers.</p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold mb-3 text-slate-900">3. Data Security</h2>
-            <p>We use industry-standard encryption to protect your data. Authentication is handled securely via Supabase and OAuth protocols.</p>
-          </div>
-
-          <div>
-            <h2 className="text-xl font-bold mb-3 text-slate-900">4. Third-Party Services</h2>
-            <p>Our service interacts with APIs from Facebook, LinkedIn, Twitter, etc. Your use of these services is also subject to their respective privacy policies.</p>
+            <h2 className="text-xl font-bold mb-3 text-slate-900 uppercase">2. Billing Information</h2>
+            <p>All payments are handled through <strong>Paddle</strong>. We do not store your credit card information.</p>
           </div>
         </section>
 
-        <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center">
-          <a href="/register" className="text-indigo-600 font-bold hover:underline">← Back to Register</a>
-          <p className="text-[10px] font-black text-slate-400 uppercase">PostJet © 2026</p>
+        <div className="mt-12 pt-8 border-t border-slate-100 flex justify-between items-center text-[10px] font-black text-slate-400 uppercase tracking-widest">
+          <p>PostJet © 2026</p>
+          <a href="/terms" className="hover:text-indigo-600 transition-colors underline uppercase tracking-widest">Terms</a>
         </div>
       </div>
     </div>

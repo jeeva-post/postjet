@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowRight, Globe, Share2, Sparkles, Zap, Shield, CheckCircle2 } from 'lucide-react';
+import { ArrowRight, Globe, Share2, Sparkles, Shield } from 'lucide-react';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -12,7 +12,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0A0F1C] text-white">
+    <div className="min-h-screen bg-[#0A0F1C] text-white flex flex-col">
       
       {/* 🚀 FIXED HEADER */}
       <nav className="fixed top-0 left-0 w-full z-[100] bg-[#0A0F1C]/80 backdrop-blur-xl border-b border-white/5">
@@ -39,8 +39,8 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* 🔵 HERO SECTION (Extra padding for scrolling space) */}
-      <div className="max-w-7xl mx-auto px-6 md:px-10 pt-32 pb-32">
+      {/* 🔵 HERO SECTION */}
+      <div className="flex-grow max-w-7xl mx-auto px-6 md:px-10 pt-32 pb-32">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-16 items-center">
           
           {/* LEFT CONTENT */}
@@ -50,7 +50,7 @@ export default function LandingPage() {
             </div>
             
             <h1 className="text-6xl md:text-[84px] font-black leading-[0.95] tracking-tighter">
-               One Dashboard. <br/>
+                One Dashboard. <br/>
               <span className="text-[#00D1FF]">Every Network.</span>
             </h1>
             
@@ -78,7 +78,7 @@ export default function LandingPage() {
           {/* RIGHT SIDE FEATURE CARD */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-white/[0.03] border border-white/10 rounded-[56px] p-10 relative overflow-hidden group">
-               <h3 className="text-3xl font-black italic tracking-tighter leading-tight italic mb-8">Unified publishing for all major networks.</h3>
+               <h3 className="text-3xl font-black italic tracking-tighter leading-tight italic mb-8 uppercase">Features</h3>
                <div className="space-y-4">
                   {[
                     { title: 'Multi-platform Sync', icon: <Share2 size={18} />, desc: 'Post to LinkedIn, TikTok, and 15+ more.' },
@@ -98,12 +98,34 @@ export default function LandingPage() {
                </div>
             </div>
           </div>
-
         </div>
       </div>
 
-      {/* 🔴 FOOTER AREA (To ensure there's enough height to scroll) */}
-      <div className="h-[200px]"></div>
+      {/* 🔴 FOOTER (Only Logic added, simple design) */}
+      <footer className="bg-black/50 border-t border-white/5 py-12 mt-auto">
+        <div className="max-w-7xl mx-auto px-6 md:px-10 flex flex-col md:flex-row justify-between items-center gap-8">
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-indigo-600 rounded flex items-center justify-center font-black text-xs text-white">P</div>
+              <span className="text-lg font-black italic tracking-tighter uppercase text-white">PostJet</span>
+            </div>
+            <p className="text-slate-500 text-[10px] font-bold uppercase tracking-[0.2em]">© 2026 All Rights Reserved</p>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-8">
+            <button onClick={() => handleNav('/terms')} className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest transition-colors">Terms</button>
+            <button onClick={() => handleNav('/privacy')} className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest transition-colors">Privacy</button>
+            <a href="mailto:support@postjet.vercel.app" className="text-xs font-bold text-slate-400 hover:text-white uppercase tracking-widest transition-colors">Support</a>
+          </div>
+
+          <div className="text-center md:text-right">
+            <p className="text-slate-600 text-[9px] font-bold uppercase tracking-widest leading-relaxed">
+              Merchant of Record <br />
+              <span className="text-indigo-400/80">Paddle Payments</span>
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
