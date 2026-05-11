@@ -1,13 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getSupabaseClient, isSupabaseConfigured } from '@/lib/supabase';
 
 export async function POST() {
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: 'Supabase environment variables are missing' }, { status: 500 });
+  }
+
   const cookieStore = await cookies();
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    return NextResponse.json({ error: 'Supabase client could not be initialized' }, { status: 500 });
+  }
 
   const authHeader = cookieStore.get('sb-access-token')?.value;
   const { data: { user } } = await supabase.auth.getUser(authHeader);

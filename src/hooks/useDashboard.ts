@@ -15,7 +15,7 @@ export function useDashboard() {
   const [platformStatuses, setPlatformStatuses] = useState<StatusState>({});
   const [showStatusModal, setShowStatusModal] = useState(false);
 
-  const handlePostSubmit = async (e: React.FormEvent, selectedApps: string[], file?: File | null) => {
+  const handlePostSubmit = async (e: React.FormEvent, selectedApps: string[], file?: File | null, pageIds?: string[]) => {
     e.preventDefault();
     if (!postContent.trim() || selectedApps.length === 0) {
       alert("Please select apps and enter content!");
@@ -55,16 +55,21 @@ export function useDashboard() {
       for (const app of selectedApps) {
         setPlatformStatuses(prev => ({ ...prev, [app]: { status: 'loading' } }));
 
+        const requestBody = {
+          content: postContent,
+          platform: app,
+          mediaUrl,
+          mediaType,
+          pageId: pageIds?.[0],
+        };
+
+        console.log('Dashboard sending /api/post body:', requestBody);
+
         try {
           const response = await fetch('/api/post', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              content: postContent,
-              platform: app,
-              mediaUrl,
-              mediaType
-            }),
+            body: JSON.stringify(requestBody),
           });
 
           const data = await response.json();

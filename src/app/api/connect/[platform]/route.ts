@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
-export async function GET(request: Request, { params }: { params: { platform: string } }) {
-  const platform = params.platform;
-  // Live URL update cheyandi
-  const baseUrl = "https://postjet.vercel.app/api/auth/callback";
+export async function GET(request: NextRequest, context: { params: Promise<{ platform: string }> }) {
+  const { platform } = await context.params;
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+  const baseUrl = `${siteUrl.replace(/\/$/, '')}/api/auth/callback`;
 
   let authUrl = "";
 

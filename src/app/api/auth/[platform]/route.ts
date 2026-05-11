@@ -1,12 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
-import { NextResponse } from 'next/server';
 
 export async function GET(
-  request: Request,
-  { params }: { params: { platform: string } }
+  request: NextRequest,
+  context: { params: Promise<{ platform: string }> }
 ) {
-  const platform = params.platform;
+  const { platform } = await context.params;
   const cookieStore = await cookies();
   
   // Platform batti Redirect URL select cheyali

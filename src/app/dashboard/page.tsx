@@ -246,7 +246,7 @@ export default function DashboardPage() {
                  </div>
               </div>
               
-              <form onSubmit={(e) => handlePostSubmit(e, selectedApps, selectedFile)} className="space-y-6">
+              <form onSubmit={(e) => handlePostSubmit(e, selectedApps, selectedFile, selectedPageIds)} className="space-y-6">
                 <textarea
                   value={postContent}
                   onChange={(e) => setPostContent(e.target.value)}

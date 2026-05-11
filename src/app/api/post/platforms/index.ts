@@ -9,7 +9,7 @@ import { postToDiscord } from "./discord";
 import { postToWhatsApp } from "./whatsapp";
 import { postToSlack } from "./slack"; // <--- New Import
 
-export const platformHandlers: Record<string, (content: string, mediaUrl: string) => Promise<any>> = {
+export const platformHandlers: Record<string, (...args: any[]) => Promise<any>> = {
   facebook: postToFacebook,
   instagram: postToInstagram,
   telegram: postToTelegram,

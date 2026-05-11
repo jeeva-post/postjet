@@ -1,9 +1,9 @@
-export async function postToFacebook(content: string, mediaUrl: string, mediaType: string) {
-  const fbPageId = process.env.FACEBOOK_PAGE_ID;
-  const fbToken = process.env.FACEBOOK_PAGE_ACCESS_TOKEN;
+export async function postToFacebook(content: string, mediaUrl: string, mediaType: string, fbPageId: string, fbToken: string) {
+  if (!fbToken) throw new Error("Missing Access Token");
+  if (!fbPageId) throw new Error("Missing Facebook Page ID");
 
   let endpoint = "";
-  let bodyData: any = { access_token: fbToken };
+  const bodyData: any = { access_token: fbToken };
 
   if (mediaUrl) {
     endpoint = `https://graph.facebook.com/v19.0/${fbPageId}/${mediaType === 'video' ? 'videos' : 'photos'}`;
@@ -21,6 +21,12 @@ export async function postToFacebook(content: string, mediaUrl: string, mediaTyp
   });
 
   const data = await res.json();
-  if (!res.ok) throw new Error(data.error?.message || "Facebook API Error");
-  return data;
+  console.log('Facebook API Request:', { endpoint, bodyData });
+  console.log('Facebook API Response:', data);
+
+  if (!res.ok) {
+    throw new Error(data.error?.message || `Facebook API Error: ${JSON.stringify(data)}`);
+  }
+
+  return { success: true, data };
 }

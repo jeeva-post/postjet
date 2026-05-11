@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import clientPromise from "@/lib/mongodb";
-import bcrypt from "bcryptjs";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
 
 // ఈ లైన్ వెర్సెల్ బిల్డ్ ఎర్రర్స్ (Missing Environment Variables) రాకుండా కాపాడుతుంది
 export const dynamic = "force-dynamic";
@@ -18,39 +17,33 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2. MongoDB కనెక్ట్ అవ్వడం
-    const client = await clientPromise;
-    const db = client.db();
-
-    // 3. యూజర్ ముందే ఉన్నారో లేదో చూడటం
-    const existingUser = await db.collection("users").findOne({
-      $or: [
-        { email: email.toLowerCase() },
-        { mobile: mobile }
-      ]
-    });
-
-    if (existingUser) {
+    if (!isSupabaseConfigured()) {
       return NextResponse.json(
-        { error: "ఈ ఇమెయిల్ లేదా మొబైల్ నంబర్ తో ఇప్పటికే ఒక యూజర్ ఉన్నారు." },
-        { status: 400 }
+        { error: 'Supabase environment variables are missing' },
+        { status: 500 }
       );
     }
 
-    // 4. పాస్‌వర్డ్ ని హ్యాష్ చేయడం
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Supabase client could not be initialized' },
+        { status: 500 }
+      );
+    }
 
-    // 5. కొత్త యూజర్‌ని సేవ్ చేయడం
-    const result = await db.collection("users").insertOne({
-      name,
-      email: email.toLowerCase(),
-      mobile,
-      password: hashedPassword,
-      createdAt: new Date(),
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name, mobile } },
     });
 
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+
     return NextResponse.json(
-      { message: "User registered successfully!", userId: result.insertedId },
+      { message: "User registered successfully!", data },
       { status: 201 }
     );
 

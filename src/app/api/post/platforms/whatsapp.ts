@@ -1,16 +1,10 @@
-export async function postToWhatsApp(content: string, mediaUrl: string) {
-  const token = process.env.WHATSAPP_ACCESS_TOKEN?.trim();
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
-  const recipientNumber = process.env.WHATSAPP_RECIPIENT_NUMBER?.trim();
-
-  // Credentials check
-  if (!token || !phoneNumberId || !recipientNumber) {
-    throw new Error("WhatsApp credentials (Token, Phone ID, or Recipient) missing in .env");
-  }
+export async function postToWhatsApp(content: string, mediaUrl: string, token: string, phoneNumberId?: string, recipientNumber?: string) {
+  if (!token) throw new Error("Missing Access Token");
+  if (!phoneNumberId) throw new Error("Missing WhatsApp Phone Number ID");
+  if (!recipientNumber) throw new Error("Missing WhatsApp recipient number");
 
   const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
 
-  // WhatsApp Message Body
   const body: any = {
     messaging_product: "whatsapp",
     to: recipientNumber,
@@ -39,11 +33,12 @@ export async function postToWhatsApp(content: string, mediaUrl: string) {
   });
 
   const data = await res.json();
+  console.log('WhatsApp API Request:', { url, body });
+  console.log('WhatsApp API Response:', data);
 
   if (!res.ok) {
-    console.error("WhatsApp API Error:", JSON.stringify(data));
-    throw new Error(data.error?.message || "WhatsApp delivery failed");
+    throw new Error(data.error?.message || `WhatsApp delivery failed: ${JSON.stringify(data)}`);
   }
 
-  return data;
+  return { success: true, data };
 }

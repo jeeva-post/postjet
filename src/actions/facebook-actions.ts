@@ -1,21 +1,51 @@
 "use server";
 
-import clientPromise from "@/lib/mongodb";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { cookies } from "next/headers";
+import { getSupabaseClient, isSupabaseConfigured } from "@/lib/supabase";
+
+async function getSupabaseUser() {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("Supabase configuration is missing");
+
+  const cookieStore = await cookies();
+  const authHeader = cookieStore.get("sb-access-token")?.value;
+  const { data: { user }, error } = await supabase.auth.getUser(authHeader);
+
+  if (error || !user) {
+    throw new Error("Unauthorized: unable to authenticate Supabase session");
+  }
+
+  return user;
+}
 
 export async function getFacebookPages() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.email) return [];
+  if (!isSupabaseConfigured()) return [];
+
   try {
-    const client = await clientPromise;
-    const db = client.db();
-    const user = await db.collection("users").findOne({ email: session.user.email });
-    if (!user) return [];
-    const account = await db.collection("accounts").findOne({ userId: user._id, provider: "facebook" });
-    if (!account || !account.access_token) return [];
-    const response = await fetch(`https://graph.facebook.com/me/accounts?fields=name,id,access_token,picture,instagram_business_account&access_token=${account.access_token}`);
+    const user = await getSupabaseUser();
+    const supabase = getSupabaseClient();
+    if (!supabase) throw new Error("Supabase configuration is missing");
+
+    const { data: connection, error } = await supabase
+      .from("user_connections")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("platform", "facebook")
+      .maybeSingle();
+
+    if (error || !connection || !connection.access_token) {
+      console.warn("Facebook connection not found or missing access token", error);
+      return [];
+    }
+
+    const response = await fetch(`https://graph.facebook.com/me/accounts?fields=name,id,access_token,picture,instagram_business_account&access_token=${connection.access_token}`);
     const data = await response.json();
+
+    if (!response.ok) {
+      console.error("Facebook pages fetch failed:", data);
+      return [];
+    }
+
     return data.data || [];
   } catch (error) {
     console.error("Fetch Pages Error:", error);

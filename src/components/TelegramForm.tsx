@@ -1,6 +1,6 @@
 "use client";
 
-import { postToTelegram } from "@/lib/actions/telegram-actions";
+import { postToTelegram } from "@/actions/telegram-actions";
 import { useState } from "react";
 
 export default function TelegramForm() {

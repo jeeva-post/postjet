@@ -1,7 +1,6 @@
-export async function postToLinkedIn(content: string, mediaUrl: string) {
+export async function postToLinkedIn(content: string, mediaUrl: string, mediaType: string, token: string) {
   try {
-    const token = process.env.LINKEDIN_ACCESS_TOKEN?.trim();
-    if (!token) throw new Error("LinkedIn access token missing in .env");
+    if (!token) throw new Error("Missing Access Token");
 
     // 1. User Info (Person URN) Fetch
     const meRes = await fetch('https://api.linkedin.com/v2/userinfo', {
@@ -100,13 +99,15 @@ export async function postToLinkedIn(content: string, mediaUrl: string) {
       body: JSON.stringify(postPayload)
     });
 
+    const finalData = await finalRes.json();
+    console.log('LinkedIn UGC POST response:', finalData);
+
     if (finalRes.status === 201) {
       console.log("UGC Post Created Successfully!");
-      return { success: true };
+      return { success: true, data: finalData };
     }
 
-    const finalErr = await finalRes.json();
-    throw new Error(finalErr.message || "UGC Post Failed");
+    throw new Error(finalData.message || `UGC Post Failed: ${JSON.stringify(finalData)}`);
 
   } catch (error: any) {
     console.error("LinkedIn Plan B Final Error:", error.message);

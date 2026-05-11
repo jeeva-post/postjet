@@ -15,19 +15,21 @@ export default function DashboardPage() {
     setStatus(`🚀 Posting to ${platform}...`);
 
     try {
-      const res = await fetch(`/api/post/${platform}`, {
+      const res = await fetch(`/api/post`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, mediaUrl }),
+        body: JSON.stringify({ platform, content, mediaUrl }),
       });
       const data = await res.json();
       if (data.success) {
         setStatus(`✅ Posted to ${platform} Successfully!`);
       } else {
-        setStatus(`❌ ${platform} Error: ${data.error}`);
+        console.error(`${platform} post failed`, data);
+        setStatus(`❌ ${platform} Error: ${data.error || 'Check console for details'}`);
       }
-    } catch (err) {
-      setStatus(`❌ ${platform} Connection Error`);
+    } catch (err: any) {
+      console.error(`${platform} connection error`, err);
+      setStatus(`❌ ${platform} Connection Error: ${err?.message || 'See console'}`);
     } finally {
       setLoading(false);
     }

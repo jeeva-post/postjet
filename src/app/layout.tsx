@@ -9,6 +9,9 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "PostJet - 17+ Platforms, One Dashboard",
   description: "Automate your social media presence with AI",
+  verification: {
+    google: "ipW75CHMsTe_ZsAwdXlqqB5DhlL39nzINgFnMipob-8",
+  },
 };
 
 export default function RootLayout({
